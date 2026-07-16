@@ -1,3 +1,4 @@
 
+import { startServer } from "./core/server";
 
-console.log("hello");
+startServer();
