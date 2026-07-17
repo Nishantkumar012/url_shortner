@@ -1,52 +1,55 @@
-# 📊 progress.md — Work Done Tracker
+# 📊 progress.md — What's Done So Far
 
-> This file records **completed work** in todo-list form.
-> The full task checklist lives in **[PHASES.md](./PHASES.md)** — check items off
-> there as you go, and mirror finished phases here.
->
-> Convention: `- [x]` done · `- [ ]` not done. Add a dated note when a phase ships.
+> Plain status log of completed work. The phase-by-phase plan lives in
+> **[PHASES.md](./PHASES.md)**; the architecture spec is in **[PLANNING.md](./PLANNING.md)**.
 
----
-
-## 🛠️ Project Setup (pre-Phase 1)
-
-- [x] README.md written (overview + getting started)
-- [x] PLANNING.md written (architecture, module specs, 15-phase spec)
-- [x] PHASES.md written (cross-off task tracker + frontend milestones)
-- [x] Directory structure created (`backend/` tree with `src/modules/*`)
-- [ ] `package.json` + `tsconfig.json` + ESLint/Prettier (Phase 1)
-- [ ] `Dockerfile` + `docker-compose.yml` (Phase 1)
+_Last updated: 2026-07-14_
 
 ---
 
-## 🚦 Phase Progress
+## ✅ Done
 
-- [ ] **Phase 1** — Project Foundation
-- [ ] **Phase 2** — Authentication
-- [ ] **Phase 3** — URL Management
-- [ ] **Phase 4** — Redirect Service  → then: *Thin Frontend MVP*
-- [ ] **Phase 5** — Analytics
-- [ ] **Phase 6** — Redis Integration
-- [ ] **Phase 7** — Background Workers
-- [ ] **Phase 8** — API Keys
-- [ ] **Phase 9** — Rate Limiting
-- [ ] **Phase 10** — Workspace
-- [ ] **Phase 11** — Subscriptions
-- [ ] **Phase 12** — Payments
-- [ ] **Phase 13** — Notifications
-- [ ] **Phase 14** — Admin Panel
-- [ ] **Phase 15** — Production Readiness
+### Project docs
+- `README.md` — overview + getting started
+- `PLANNING.md` — architecture, module specs, 15-phase spec
+- `PHASES.md` — phase task tracker
+- `phase1.md` — Phase 1 "what to be done" spec
+- `progress.md` — this file
+- `backend/` directory tree created (`src/`, `modules/*`, `prisma/`, `tests/`, etc.)
+- `backend/.gitignore` — node_modules, dist, .env, logs, coverage, editor/OS
 
----
-
-## 🎨 Frontend Milestones
-
-- [ ] **MVP Frontend** (after Phase 4): login + create/list URLs + working redirect
-- [ ] **Full Frontend** (after Phase 14): dashboard, billing, workspace, admin UIs
+### Backend — Phase 1 (partial)
+- `package.json` — deps: express, @prisma/client, @prisma/adapter-pg, pg, dotenv,
+  + dev: typescript, tsx, prisma, @types/*
+- `tsconfig.json` — configured; fixed two errors (see below)
+- `.env` — `DATABASE_URL` set to Neon Postgres
+- `src/utils/prisma.ts` — Prisma client singleton using `PrismaPg` driver adapter
+- Prisma client **generated** (via local binary `./node_modules/.bin/prisma generate`)
+- `tsc --noEmit` passes with **0 errors**
 
 ---
 
-## 📝 Log
+## ⚠️ Issues fixed
+- **tsconfig `verbatimModuleSyntax`** conflicted with `"type": "commonjs"` → removed it.
+- **tsconfig `rootDir: ./src`** rejected `prisma.config.ts` at backend root (TS6059)
+  → added `"exclude": ["node_modules", "dist", "prisma.config.ts"]`.
+- **`npx prisma generate` hangs** (npx re-fetches) → use local binary instead.
 
-- **2026-07-14** — Initialized project: docs (`README.md`, `PLANNING.md`, `PHASES.md`,
-  `progress.md`) + `backend/` directory scaffold created. No code yet.
+---
+
+## 🚧 Not done yet (Phase 1 remainder)
+- `schema.prisma` has **no models yet** (currently empty — `prisma.user` is `undefined`
+  until User/RefreshToken models are added and regenerated)
+- Core singletons: `App`, `Server`, `Database`, `Redis`, `Queue`, `Logger`
+- Middlewares: helmet, cors, error handler, validate
+- Health checks (`/healthz`, `/readyz`) + graceful shutdown
+- `Dockerfile` + `docker-compose.yml` (pg + redis)
+- Phase 2+ (Auth, URL, Redirect, …) not started
+
+---
+
+## 📝 Notes
+- Prisma version is **7.8.0** — uses driver adapters by default; client generated into
+  `node_modules/.prisma/client`.
+- `prisma.user` is `undefined` right now **only because the schema has no models**,
+  not because of `prisma.ts`.

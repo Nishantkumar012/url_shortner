@@ -23,16 +23,16 @@ See **Frontend Milestones** at the bottom for exactly when to build UI.
 
 ## Phase 1 — Project Foundation
 
-- [ ] Initialize Node + TypeScript project (`package.json`, `tsconfig`, ESLint, Prettier)
-- [ ] Create folder structure (`core/`, `config/`, `modules/`, `workers/`, `jobs/`, `utils/`, `common/`, `types/`)
-- [ ] Set up Prisma + PostgreSQL (`schema.prisma`, initial models: User, Url, …)
-- [ ] zod-validated `config/env.ts` (typed config loader)
-- [ ] Core singletons: `App`, `Server`, `Database`, `Redis`, `Queue`, `Logger`
-- [ ] Middlewares: `helmet`, `cors`, `logger` (pino-http), `errorHandler`, `validate`
-- [ ] Docker + `docker-compose.yml` (PostgreSQL + Redis for local dev)
+- [ x] Initialize Node + TypeScript project (`package.json`, `tsconfig`, ESLint, Prettier)
+- [ x] Create folder structure (`core/`, `config/`, `modules/`, `workers/`, `jobs/`, `utils/`, `common/`, `types/`)
+- [ x] Set up Prisma + PostgreSQL (`schema.prisma`, initial models: User, Url, …)
+- [ x] zod-validated `config/env.ts` (typed config loader)
+- [ x] Core singletons: `App`, `Server`, `Database`, `Redis`, `Queue`, `Logger`
+- [ x] Middlewares: `helmet`, `cors`, `logger` (pino-http), `errorHandler`, `validate`
+- [ x] Docker + `docker-compose.yml` (PostgreSQL + Redis for local dev)
 - [ ] Health checks: `/healthz` (liveness), `/readyz` (readiness)
-- [ ] Graceful shutdown (close server, Prisma, Redis, Queue on SIGTERM/SIGINT)
-- [ ] ✅ App boots; verify with `curl localhost:3000/healthz`
+- [ x] Graceful shutdown (close server, Prisma, Redis, Queue on SIGTERM/SIGINT)
+- [ x] ✅ App boots; verify with `curl localhost:3000/healthz`
 
 ---
 
