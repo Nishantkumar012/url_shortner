@@ -38,16 +38,16 @@ See **Frontend Milestones** at the bottom for exactly when to build UI.
 
 ## Phase 2 — Authentication
 
-- [ ] Register endpoint (+ Zod validation)
-- [ ] Login endpoint
-- [ ] JWT access token (short-lived)
-- [ ] Refresh token (rotating, server-tracked in Redis/DB)
-- [ ] Logout (revoke refresh)
-- [ ] Password hashing (argon2)
-- [ ] Centralized `AppError` + error handler middleware
+- [ x] Register endpoint (+ Zod validation)
+- [ x] Login endpoint
+- [ x] JWT access token (short-lived)
+- [ x] Refresh token (rotating, server-tracked in Redis/DB)
+- [ x] Logout (revoke refresh)
+- [ x] Password hashing (argon2)
+- [ x] Centralized `AppError` + error handler middleware
 - [ ] Email verification (token + SMTP send)
 - [ ] Password reset (request + confirm via SMTP)
-- [ ] `authGuard` middleware (attach user to request)
+- [ x] `authGuard` middleware (attach user to request)
 - [ ] *(Optional)* Google / Gmail OAuth social login
 - [ ] Swagger docs for auth routes
 - [ ] Integration tests: register → login → protected route → refresh → logout
@@ -56,9 +56,9 @@ See **Frontend Milestones** at the bottom for exactly when to build UI.
 
 ## Phase 3 — URL Management
 
-- [ ] Create URL endpoint
-- [ ] Update URL endpoint
-- [ ] Delete URL endpoint
+- [ x] Create URL endpoint
+- [ x] Update URL endpoint
+- [ x] Delete URL endpoint
 - [ ] Custom alias (+ reserved-word blocklist: `api`, `admin`, `docs`, `healthz`…)
 - [ ] Password protection on URLs
 - [ ] Expiration (TTL / expiry date)

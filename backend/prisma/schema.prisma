@@ -29,6 +29,7 @@ model User{
      updatedAt     DateTime @updatedAt
 
      refreshTokens RefreshTokens[]
+     urls          Url[]
 
      @@map("users")
      
@@ -47,4 +48,23 @@ model RefreshTokens{
 
      @@index([userId])
      @@map("refresh_token")
+}
+
+
+model Url {
+  id          String   @id @default(cuid())
+  shortCode   String   @unique
+  originalUrl String
+
+  expiresAt   DateTime?
+
+  clickCount  Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

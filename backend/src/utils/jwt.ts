@@ -23,13 +23,13 @@ export function verifyAccessToken(token: string): {sub: string}{
      return jwt.verify(token,env.JWT_ACCESS_SECRET) as { sub: string}
 }
 
-export function hashToken(token:string):Promise<string>{
+export async  function hashToken(token:string):Promise<string>{
       
       return argon2.hash(token);
 }
 
 
-export function verifyHashToken(plain:string,hashToken:string):Promise<boolean>{
+export async function verifyHashToken(plain:string,hashToken:string):Promise<boolean>{
       
-      return argon2.verify(plain,hashToken);
+      return argon2.verify(hashToken,plain);
 }
