@@ -3,6 +3,7 @@ import {
   createShortUrl,
   updateShortUrl,
   deleteShortUrl,
+  getAllShortUrl
 } from "./urlController";
 import { redirectController } from "./redirectController";
 import { authGuard } from "../../middlewares/authGuard";
@@ -22,5 +23,7 @@ urlRoutes.patch(
 );
 urlRoutes.delete("/:shortCode", authGuard, deleteShortUrl);
 
+urlRoutes.get("/",authGuard, getAllShortUrl);
+
 // Public redirect - no auth required
-urlRoutes.get("/:shortCode", redirectController);
+urlRoutes.get("/:shortCode",   redirectController);

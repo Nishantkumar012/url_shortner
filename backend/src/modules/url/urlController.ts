@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import type { z } from "zod";
-import { createUrl, updateUrl, deleteUrl } from "./urlService";
+import { createUrl, updateUrl, deleteUrl, getAllUrl } from "./urlService";
 import { urlAliasSchema, urlUpdateSchema } from "./urlSchema";
 import { AppError } from "../../common/error";
 
@@ -53,4 +53,16 @@ export async function deleteShortUrl(req: Request, res: Response) {
   const url = await deleteUrl(shortCode, userId);
 
   res.status(200).json({ status: "success", data: url });
+}
+
+
+
+export async function getAllShortUrl(req:Request,res:Response){
+    
+   const userId = req.userId as string;
+
+    const urls = await getAllUrl(userId);
+
+    res.status(200).json({ status: "success", data: urls.urls});
+    
 }

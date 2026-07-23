@@ -77,3 +77,25 @@ export async function deleteUrl(shortCode: string, userId: string) {
 
   return prisma.url.delete({ where: { id: existing.id } });
 }
+
+
+
+export async function getAllUrl(userId:string){
+    
+     const existing = await prisma.user.findUnique({
+         where: {
+            id:userId
+         },
+         select:{
+           urls:true
+         }
+     })
+
+       if(!existing){
+           throw new AppError(404, "User not found");
+       } 
+
+        console.log("correct urls ",existing)
+
+      return existing 
+}

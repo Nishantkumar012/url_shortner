@@ -53,7 +53,8 @@ export async function login(req: Request, res: Response) {
   const input = req.body as LoginInput;
 
   const { refreshToken, ...data } = await loginUser(input);
-
+            
+  // console.log("copy data from conttroller",data);
   setRefreshCookie(res, refreshToken);
 
   res.status(200).json({ status: "success", data });

@@ -73,6 +73,9 @@ export async function registerUser(input: RegisterInput) {
 
   const tokens = await createSession(user.id);
 
+  // console.log("copy data from service ",tokens);
+
+
   return {
     user,
     ...tokens,
