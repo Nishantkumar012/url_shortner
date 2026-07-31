@@ -1,5 +1,4 @@
 # 🗺️ PHASES — Task Tracker
-
 > Cross off `- [ ]` → `- [x]` as you complete each step.
 > This file is the **progress tracker**; the canonical architecture & specs live in
 > **[PLANNING.md](./PLANNING.md)** and the overview in **[README.md](./README.md)**.
@@ -31,8 +30,8 @@ See **Frontend Milestones** at the bottom for exactly when to build UI.
 - [ x] Middlewares: `helmet`, `cors`, `logger` (pino-http), `errorHandler`, `validate`
 - [ x] Docker + `docker-compose.yml` (PostgreSQL + Redis for local dev)
 - [ ] Health checks: `/healthz` (liveness), `/readyz` (readiness)
-- [ x] Graceful shutdown (close server, Prisma, Redis, Queue on SIGTERM/SIGINT)
-- [ x] ✅ App boots; verify with `curl localhost:3000/healthz`
+- [ ] Graceful shutdown (close server, Prisma, Redis, Queue on SIGTERM/SIGINT)
+- [ ] ✅ App boots; verify with `curl localhost:3000/healthz`
 
 ---
 
@@ -47,7 +46,7 @@ See **Frontend Milestones** at the bottom for exactly when to build UI.
 - [ x] Centralized `AppError` + error handler middleware
 - [ ] Email verification (token + SMTP send)
 - [ ] Password reset (request + confirm via SMTP)
-- [ x] `authGuard` middleware (attach user to request)
+- [ ] `authGuard` middleware (attach user to request)
 - [ ] *(Optional)* Google / Gmail OAuth social login
 - [ ] Swagger docs for auth routes
 - [ ] Integration tests: register → login → protected route → refresh → logout
@@ -213,21 +212,41 @@ Built only at the two checkpoints in the cadence table above.
 
 ### MVP Frontend — after Phase 4 (Stage 2)
 
-- [ ] Project scaffold (Vite + React/Next — your choice)
-- [ ] Auth screens: Register / Login / Forgot password
-- [ ] Dashboard: create short URL (form)
-- [ ] Dashboard: list & copy & delete user's URLs
-- [ ] Verify a redirect works end-to-end in the browser
-- [ ] Wire API client to backend (token storage, refresh)
+- [x ] Initialize frontend project with Vite + React (npm create vite@latest)
+- [ ] Install core dependencies (react-router-dom, axios, @hookform/resolvers, yup)
+- [ ] Configure TypeScript, ESLint, and Prettier for the frontend repo
+- [ ] Set up project scaffold (`src/components`, `src/pages`, `src/api`, `src/store` if using Redux)
+- [ ] Create Register page (form UI, validation, API call)
+- [ ] Create Login page (form UI, validation, API call, token storage)
+- [ ] Add Forgot Password page (request form, placeholder API integration)
+- [ ] Develop Dashboard layout (navigation bar, route switcher)
+- [ ] Build Create Short URL form (input, basic client-side validation)
+- [ ] Implement URL List page (fetch user URLs via API, display in table, copy-to-clipboard)
+- [ ] Add Delete and Edit actions for each URL entry
+- [ ] Enable end‑to‑end redirect verification in browser (manual test)
+- [ ] Set up API client (axios instance with interceptors, error handling)
+- [ ] Implement token persistence (localStorage) and auto‑refresh logic
+- [ ] Add basic loading and error boundary components
+- [ ] Write unit tests for core components (Register, Login, URLList)
+- [ ] Add integration test suite for full flow (register → login → create URL → redirect)
 
 ### Full Frontend — after Phase 14 (Stage 4)
 
-- [ ] Analytics dashboard (clicks, browsers, countries, devices, charts)
-- [ ] API Keys page (generate / rotate / revoke)
-- [ ] Workspace UI (teams, members, roles)
-- [ ] Billing page (plans, Razorpay checkout, webhook status)
-- [ ] Admin panel UI (users, URLs, reports, abuse)
-- [ ] Polish: loading/error states, responsive layout
+- [ ] Develop Analytics Dashboard (charts for clicks, browsers, countries, devices)
+- [ ] Integrate charting library (Recharts / Chart.js) with responsive design
+- [ ] Create API Keys page (generate, rotate, revoke, copy private key)
+- [ ] Build Workspace UI (team creation, member invitations, role management)
+- [ ] Implement Billing page (plan selection, Razorpay checkout integration, webhook status display)
+- [ ] Develop Admin Panel UI (user management, URL moderation, report viewing, abuse detection tools)
+- [ ] Polish UI: add loading spinners, global error boundaries, and responsive layout breakpoints
+- [ ] Add client‑side routing guards to protect authenticated routes
+- [ ] Set up form validation for all user‑facing forms (using React Hook Form + Zod)
+- [ ] Implement internationalization (i18n) for multi‑language support
+- [ ] Add accessibility compliance (ARIA labels, keyboard navigation, color contrast)
+- [ ] Write comprehensive unit tests for dashboard components
+- [ ] Write integration/e2e tests covering full user journey (auth → analytics → billing)
+- [ ] Perform cross‑browser testing (Chrome, Firefox, Safari, Edge)
+- [ ] Deploy frontend to production (Vercel/Netlify) and verify end‑to‑end flow
 
 ---
 
