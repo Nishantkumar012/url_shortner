@@ -53,3 +53,12 @@ _Last updated: 2026-07-14_
   `node_modules/.prisma/client`.
 - `prisma.user` is `undefined` right now **only because the schema has no models**,
   not because of `prisma.ts`.
+
+
+
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "trk/moonshotai/kimi-k3-free"
+
+
+
+    // "ANTHROPIC_DEFAULT_SONNET_MODEL": "auto/best-free"
+    // "ANTHROPIC_MODEL": "nvidia/nemotron-3-nano-30b-a3b:free"

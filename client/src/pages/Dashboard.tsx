@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Check,
 } from "lucide-react";
+import { ThreeBackground } from "../App";
 
 const LOGO =
  "https://lh3.googleusercontent.com/aida-public/AB6AXuBgdTWjBxgLljLj0OL4xEvxNE5sUvv3veDbVYoyqiYOxLU54PKranBW0u0G1XEs-EbRzsEXq2Em-e-iYdUaPRPF8UMHKnZ3hLHIpk7uBP8Xy1W5A0K7GcNbJ4sABhViIb1vkZsh7YZRwXloCpkQUG7hYVv85N2VkX--BcqVP3UGil_qk91sJ8OwX6auzgHq8FTq0fZVShQLBc6U5IwqM3CTq_PFoBdTX1WFMSJX-pGXTl0XDtVioHyO";
@@ -110,6 +111,8 @@ export default function Dashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-on-surface">
+
+        <ThreeBackground/>
       {/* Atmospheric Background */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-primary-container/5 blur-[120px]" />

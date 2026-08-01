@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard.tsx'
 
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
+import Analytics from './pages/Analytics.tsx'
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: "/dash",
     element: <Dashboard/>
+  },
+  {
+    path: "/analy",
+    element: <Analytics/>
   }
 ]);
 
