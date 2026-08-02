@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axiosinstance from "../utils/axiosInstance";
 import {
   Link as LinkIcon,
   Star,
@@ -19,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  X,
 } from "lucide-react";
 import { ThreeBackground } from "../App";
 
@@ -72,7 +74,50 @@ const initialLinks: LinkItem[] = [
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
-  const [links, setLinks] = useState(initialLinks);
+  const [links, setLinks] = useState<LinkItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    originalUrl: "",
+    alias: "",
+    expiresAt: "",
+  });
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch current user's URLs from backend
+  const fetchUserUrls = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosinstance.get("/url/");
+
+      console.log("response urls", response);
+      // Map backend response to LinkItem format
+      const userLinks: LinkItem[] = response.data.map((url: any) => ({
+        id: url._id || url.id,
+        destination: url.originalUrl || url.destination,
+        shortUrl: url.shortCode,
+        created: new Date(url.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        clicks: url.clickCount?.toString() || "0",
+        status: url.status || "Active",
+      }));
+      setLinks(userLinks);
+    } catch (error) {
+      console.error("Failed to fetch URLs:", error);
+      // Fallback to initialLinks on error
+      setLinks(initialLinks);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserUrls();
+  }, []);
 
   const filteredLinks = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -86,6 +131,22 @@ export default function Dashboard() {
         link.status.toLowerCase().includes(value),
     );
   }, [links, search]);
+
+  // Calculate stats from user's URLs
+  const stats = useMemo(() => {
+    const totalClicks = links.reduce((sum, link) => {
+      const clicks = parseInt(link.clicks.replace(/,/g, ""), 10) || 0;
+      return sum + clicks;
+    }, 0);
+
+    const activeLinks = links.filter((link) => link.status === "Active").length;
+
+    return {
+      totalClicks,
+      activeLinks,
+      totalLinks: links.length,
+    };
+  }, [links]);
 
   const handleCopy = async (link: LinkItem) => {
     try {
@@ -109,6 +170,52 @@ export default function Dashboard() {
     );
   };
 
+  // Create new short URL
+  const handleCreateUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setCreating(true);
+
+    try {
+      const payload: any = {
+        originalUrl: createForm.originalUrl,
+      };
+
+      if (createForm.alias.trim()) {
+        payload.alias = createForm.alias.trim();
+      }
+
+      if (createForm.expiresAt.trim()) {
+        payload.expiresAt = createForm.expiresAt.trim();
+      }
+
+      const response = await axiosinstance.post("/url/", payload);
+
+      // Add new URL to the list
+      const newUrl = response.data;
+      const newLink: LinkItem = {
+        id: newUrl._id || newUrl.id,
+        destination: newUrl.originalUrl,
+        shortUrl: newUrl.shortCode,
+        created: new Date(newUrl.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        clicks: "0",
+        status: "Active",
+      };
+
+      setLinks((current) => [newLink, ...current]);
+      setShowCreateModal(false);
+      setCreateForm({ originalUrl: "", alias: "", expiresAt: "" });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to create URL");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-on-surface">
 
@@ -119,6 +226,108 @@ export default function Dashboard() {
 
         <div className="absolute -bottom-52 right-0 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[150px]" />
       </div>
+
+      {/* Create URL Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel relative w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl">
+            {/* Modal Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
+                Create Short URL
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setError("");
+                  setCreateForm({ originalUrl: "", alias: "", expiresAt: "" });
+                }}
+                className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleCreateUrl} className="space-y-4">
+              {/* Original URL */}
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  Destination URL *
+                </label>
+                <input
+                  type="url"
+                  value={createForm.originalUrl}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, originalUrl: e.target.value })
+                  }
+                  placeholder="https://example.com/your-long-url"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Custom Alias */}
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  Custom Alias (optional)
+                </label>
+                <input
+                  type="text"
+                  value={createForm.alias}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, alias: e.target.value })
+                  }
+                  placeholder="my-custom-link"
+                  minLength={3}
+                  maxLength={32}
+                  pattern="[a-zA-Z0-9_-]+"
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant/60">
+                  Letters, numbers, - and _ only (3-32 chars)
+                </p>
+              </div>
+
+              {/* Expiration */}
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  Expiration (optional)
+                </label>
+                <input
+                  type="text"
+                  value={createForm.expiresAt}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, expiresAt: e.target.value })
+                  }
+                  placeholder="30m, 2h, 15d"
+                  pattern="\d+(m|h|d)"
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant/60">
+                  Format: number + unit (m=minutes, h=hours, d=days)
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <p className="rounded-lg bg-error/10 px-4 py-2 text-sm text-error">
+                  {error}
+                </p>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={creating || !createForm.originalUrl}
+                className="w-full rounded-lg bg-[#7C3AED] px-6 py-3 font-label-md font-bold text-white shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all hover:bg-[#8B5CF6] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creating ? "Creating..." : "Create Short URL"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Main Shell */}
       <div className="relative z-10 flex h-screen overflow-hidden">
@@ -230,6 +439,7 @@ export default function Dashboard() {
     hover:scale-[1.02]
     active:scale-[0.98]
   "
+  onClick={() => setShowCreateModal(true)}
 > <Plus
                 size={20}
                 className="transition-transform group-hover:rotate-90"
@@ -275,31 +485,21 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <StatCard
                 title="Total Clicks"
-                value="124,082"
+                value={stats.totalClicks.toLocaleString()}
                 glow="bg-primary/10"
-              >
-                <span className="mb-2 flex items-center text-xs font-bold text-tertiary">
-                  <TrendingUp size={13} />
-                  +12%
-                </span>
-              </StatCard>
+              />
 
               <StatCard
                 title="Active Links"
-                value="842"
+                value={stats.activeLinks.toString()}
                 glow="bg-secondary/10"
               />
 
               <StatCard
-                title="Avg. CTR"
-                value="3.2%"
+                title="Total Links"
+                value={stats.totalLinks.toString()}
                 glow="bg-tertiary/10"
-              >
-                <span className="mb-2 flex items-center text-xs font-bold text-error">
-                  <TrendingDown size={13} />
-                  -0.4%
-                </span>
-              </StatCard>
+              />
             </div>
 
             {/* LINKS TABLE */}
@@ -334,7 +534,17 @@ export default function Dashboard() {
                               {link.destination}
                             </span>
 
-                            <span className="cursor-pointer font-code font-bold text-primary hover:underline">
+                            <span
+                              className="cursor-pointer font-code font-bold text-primary hover:underline"
+                              onClick={() => {
+                                // Extract shortCode from shortUrl (e.g., "snap.link/abc123" → "abc123")
+                                 window.open(
+                                  `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/url/${link.shortUrl}`,
+                                  "_blank")
+                              }
+                               
+                            }
+                            >
                               {link.shortUrl}
                             </span>
                           </div>

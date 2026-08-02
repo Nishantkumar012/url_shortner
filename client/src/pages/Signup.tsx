@@ -1,5 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { ThreeBackground } from "../App";
+import axiosinstance from "../utils/axiosInstance";
+import { useNavigate } from "react-router";
 
 const LOGO =
    
@@ -9,17 +11,70 @@ type SubmitStatus = "idle" | "loading" | "success";
 
 export default function Signup() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  
+  const handleSignup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (status !== "idle") return;
 
-    setStatus("loading");
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
 
-    setTimeout(() => {
+    // Validate password strength
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    setStatus("loading");
+    setError("");
+
+    try {
+      console.log("Attempting signup with:", { name, email, password: "***" });
+
+      const response: any = await axiosinstance.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
+
+      console.log("Signup response:", response.data);
+      // Store token in localStorage
+      if (response.data?.accessToken) {
+        localStorage.setItem("token", response.data.accessToken);
+      }
+
       setStatus("success");
-    }, 1500);
+
+      // Redirect to dashboard or home page after successful signup
+      setTimeout(() => {
+        navigate("/dash")
+        // window.location.href = "/dashboard";
+      }, 1500);
+    } catch (err: any) {
+      console.error("Signup failed - Full error:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      console.error("Error message:", err.message);
+
+      const errorMessage = err.response?.data?.message || err.message || "Signup failed. Please try again.";
+      console.error("Setting error message:", errorMessage);
+
+      setError(errorMessage);
+      setStatus("idle");
+    }
   };
 
   return (
@@ -50,9 +105,15 @@ export default function Signup() {
 
           {/* Form */}
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSignup}
             className="w-full space-y-stack-md"
           >
+            {/* Error Message */}
+            {error && (
+              <div className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                {error}
+              </div>
+            )}
             {/* Full Name */}
             <div className="space-y-2">
               <label
@@ -73,6 +134,8 @@ export default function Signup() {
                   type="text"
                   placeholder="John Doe"
                   required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-4 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
                 />
               </div>
@@ -98,6 +161,8 @@ export default function Signup() {
                   type="email"
                   placeholder="name@company.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-4 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
                 />
               </div>
@@ -122,11 +187,23 @@ export default function Signup() {
                   <input
                     id="signup-password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     required
-                    className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-4 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-10 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-primary"
+                  >
+                    <span className="material-symbols-outlined">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -147,11 +224,23 @@ export default function Signup() {
                   <input
                     id="confirm_password"
                     name="confirm_password"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="••••••••"
                     required
-                    className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-4 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-lg border border-outline/20 bg-background py-3 pl-10 pr-10 text-on-surface outline-none transition-all placeholder:text-outline/50 focus:border-primary-container"
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant transition-colors hover:text-primary"
+                  >
+                    <span className="material-symbols-outlined">
+                      {showConfirmPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
