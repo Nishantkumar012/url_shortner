@@ -1,7 +1,7 @@
 import {type  FormEvent, useState } from "react";
 import { ThreeBackground } from "../App";
 import axiosinstance from "../utils/axiosInstance";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 
 const LOGO =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBgdTWjBxgLljLj0OL4xEvxNE5sUvv3veDbVYoyqiYOxLU54PKranBW0u0G1XEs-EbRzsEXq2Em-e-iYdUaPRPF8UMHKnZ3hLHIpk7uBP8Xy1W5A0K7GcNbJ4sABhViIb1vkZsh7YZRwXloCpkQUG7hYVv85N2VkX--BcqVP3UGil_qk91sJ8OwX6auzgHq8FTq0fZVShQLBc6U5IwqM3CTq_PFoBdTX1WFMSJX-pGXTl0XDtVioHyO";
@@ -15,6 +15,14 @@ export default function Login() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const token = localStorage.getItem("token");
+
+  // Already logged in? Send straight to the dashboard.
+  // (Skip while the "Welcome back!" success state is showing after a fresh login.)
+  if (token && status !== "success") {
+    return <Navigate to="/dash" replace />;
+  }
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

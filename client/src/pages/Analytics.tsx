@@ -91,7 +91,7 @@ export default function Analytics() {
         <div className="animate-pulse-slow absolute -right-[10%] -top-[10%] h-[50%] w-[50%] rounded-full bg-primary/20 blur-[120px]" />
 
         <div
-          className="animate-pulse-slow absolute -bottom-[10%] -left-[10%] h-[50%] w-[50%] rounded-full bg-secondary/10 blur-[120px]"
+          className="animate-pulse-slow absolute -bottom-[10%] left-[10%] h-[50%] w-[50%] rounded-full bg-secondary/10 blur-[120px]"
           style={{ animationDelay: "2s" }}
         />
       </div>

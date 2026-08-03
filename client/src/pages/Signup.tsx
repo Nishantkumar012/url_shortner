@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { ThreeBackground } from "../App";
 import axiosinstance from "../utils/axiosInstance";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 
 const LOGO =
    
@@ -20,7 +20,14 @@ export default function Signup() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  
+  const token = localStorage.getItem("token");
+
+  // Already logged in? Send straight to the dashboard.
+  // (Skip while the success state is showing after a fresh signup.)
+  if (token && status !== "success") {
+    return <Navigate to="/dash" replace />;
+  }
+
   const handleSignup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 

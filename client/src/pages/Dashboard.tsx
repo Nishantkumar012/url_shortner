@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axiosinstance from "../utils/axiosInstance";
+// import { useNavigate } from "react-router";
 import {
   Link as LinkIcon,
   Star,
@@ -23,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { ThreeBackground } from "../App";
+import {  useNavigate } from "react-router";
 
 const LOGO =
  "https://lh3.googleusercontent.com/aida-public/AB6AXuBgdTWjBxgLljLj0OL4xEvxNE5sUvv3veDbVYoyqiYOxLU54PKranBW0u0G1XEs-EbRzsEXq2Em-e-iYdUaPRPF8UMHKnZ3hLHIpk7uBP8Xy1W5A0K7GcNbJ4sABhViIb1vkZsh7YZRwXloCpkQUG7hYVv85N2VkX--BcqVP3UGil_qk91sJ8OwX6auzgHq8FTq0fZVShQLBc6U5IwqM3CTq_PFoBdTX1WFMSJX-pGXTl0XDtVioHyO";
@@ -84,6 +86,8 @@ export default function Dashboard() {
   });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  const navigate = useNavigate()
 
   // Fetch current user's URLs from backend
   const fetchUserUrls = async () => {
@@ -588,6 +592,8 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
                             <button
                               className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-on-surface"
                               title="Analytics"
+
+                              onClick={()=>{navigate('/analy')}}
                             >
                               <ChartNoAxesCombined size={20} />
                             </button>
