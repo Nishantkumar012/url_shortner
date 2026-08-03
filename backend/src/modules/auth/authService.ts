@@ -3,7 +3,7 @@ import { hashPassword } from "../../utils/password";
 import { AppError } from "../../common/error";
 import type { z } from "zod";
 import { loginSchema, registerSchema } from "./authSchema";
-import { signRefreshToken,hashToken, signAccessToken, verifyHashToken } from "../../utils/jwt";
+import { signRefreshToken,hashToken, signAccessToken, verifyHashToken, verifyRefreshToken } from "../../utils/jwt";
 import { verifyPassword } from "../../utils/password";
 import { env} from "../../config/env";
 
@@ -153,4 +153,44 @@ export async function logOut(userId: string, refreshToken: string) {
 
   // No matching active session found — token is invalid or already revoked.
   // Treat logout as idempotent instead of throwing.
+}
+
+export async function refreshAccessToken(refreshToken: string) {
+  // Verify the JWT structure and signature
+  let payload: { sub: string };
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new AppError(401, "Invalid or expired refresh token");
+  }
+
+  const userId = payload.sub;
+
+  // Find active refresh token sessions for this user
+  const tokens = await prisma.refreshTokens.findMany({
+    where: {
+      userId,
+      revoke: false,
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  // Match the provided token against stored hashes
+  let matchedTokenId: string | null = null;
+  for (const token of tokens) {
+    const matches = await verifyHashToken(refreshToken, token.tokenHash);
+    if (matches) {
+      matchedTokenId = token.id;
+      break;
+    }
+  }
+
+  if (!matchedTokenId) {
+    throw new AppError(401, "Invalid or revoked refresh token");
+  }
+
+  // Generate new access token
+  const accessToken = signAccessToken(userId);
+
+  return { accessToken };
 }

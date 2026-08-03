@@ -30,6 +30,10 @@ export async  function hashToken(token:string):Promise<string>{
 
 
 export async function verifyHashToken(plain:string,hashToken:string):Promise<boolean>{
-      
+
       return argon2.verify(hashToken,plain);
+}
+
+export function verifyRefreshToken(token: string): { sub: string } {
+      return jwt.verify(token, env.JWT_REFRESH_SECRET) as { sub: string };
 }

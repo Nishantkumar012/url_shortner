@@ -24,14 +24,43 @@ axiosinstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global Error Handling (Optional)
+// Response Interceptor: Global Error Handling & Token Refresh
 axiosinstance.interceptors.response.use(
   (response) => response.data, // Directly return response data
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized (e.g., redirect to login, clear storage)
-      localStorage.removeItem('token');
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 and we haven't already tried to refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the access token using the httpOnly refresh token cookie
+        const response = await axiosinstance.post('/auth/refresh');
+        const newToken = response.data?.data?.accessToken;
+
+        if (newToken) {
+          // Store the new access token
+          localStorage.setItem('token', newToken);
+
+          // Retry the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosinstance(originalRequest);
+        }
+      } catch (refreshError) {
+        // Refresh failed - clear token and redirect to login
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+
+    // For other 401 errors or if refresh failed
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+
     return Promise.reject(error.response?.data || error.message);
   }
 );

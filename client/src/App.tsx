@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
+import { useNavigate } from "react-router";
+
 const logo =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBgdTWjBxgLljLj0OL4xEvxNE5sUvv3veDbVYoyqiYOxLU54PKranBW0u0G1XEs-EbRzsEXq2Em-e-iYdUaPRPF8UMHKnZ3hLHIpk7uBP8Xy1W5A0K7GcNbJ4sABhViIb1vkZsh7YZRwXloCpkQUG7hYVv85N2VkX--BcqVP3UGil_qk91sJ8OwX6auzgHq8FTq0fZVShQLBc6U5IwqM3CTq_PFoBdTX1WFMSJX-pGXTl0XDtVioHyO";
 
@@ -174,6 +176,8 @@ function App() {
   const [customAlias, setCustomAlias] = useState(false);
   const [passwordProtection, setPasswordProtection] = useState(false);
 
+  const navigate = useNavigate();
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-on-surface">
       {/* NAVBAR */} 
@@ -217,11 +221,14 @@ function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="font-body-md text-on-surface-variant transition-colors hover:text-primary">
+            <button className="font-body-md text-on-surface-variant transition-colors hover:text-primary"
+              onClick={()=>{navigate("/login")}}
+             >
               Login
             </button>
 
-            <button className="rounded-lg bg-primary-container px-6 py-2 font-bold text-on-primary-container transition-transform hover:scale-105 active:scale-95">
+            <button className="rounded-lg bg-primary-container px-6 py-2 font-bold text-on-primary-container transition-transform hover:scale-105 active:scale-95"
+              onClick={()=>{navigate("/signup")}}>
               Get Started
             </button>
           </div>

@@ -5,6 +5,7 @@ import App from './App.tsx'
 import Login from "./pages/Login.tsx"
 import Signup from './pages/Signup.tsx'
 import Dashboard from './pages/Dashboard.tsx'
+import ProtectedRoute from './components/ProtectedRoute.tsx'
 
 
 import { createBrowserRouter } from "react-router";
@@ -26,11 +27,19 @@ const router = createBrowserRouter([
   },
   {
     path: "/dash",
-    element: <Dashboard/>
+    element: (
+      <ProtectedRoute>
+        <Dashboard/>
+      </ProtectedRoute>
+    )
   },
   {
     path: "/analy",
-    element: <Analytics/>
+    element: (
+      <ProtectedRoute>
+        <Analytics/>
+      </ProtectedRoute>
+    )
   }
 ]);
 

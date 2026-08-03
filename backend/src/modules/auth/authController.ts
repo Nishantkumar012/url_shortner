@@ -1,8 +1,9 @@
 import type { CookieOptions, Request, Response } from "express";
 import type { z } from "zod";
-import { loginUser, registerUser, logOut } from "./authService";
+import { loginUser, registerUser, logOut, refreshAccessToken } from "./authService";
 import { loginSchema, registerSchema } from "./authSchema";
 import { env } from "../../config/env";
+import { AppError } from "../../common/error";
 
 type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -73,4 +74,17 @@ export async function logout(req: Request, res: Response) {
   clearRefreshCookie(res);
 
   res.status(200).json({ status: "success", message: "Logged out" });
+}
+
+export async function refresh(req: Request, res: Response) {
+  // Refresh token comes from httpOnly cookie
+  const refreshToken = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+
+  if (!refreshToken) {
+    throw new AppError(401, "Refresh token not found");
+  }
+
+  const { accessToken } = await refreshAccessToken(refreshToken);
+
+  res.status(200).json({ status: "success", data: { accessToken } });
 }

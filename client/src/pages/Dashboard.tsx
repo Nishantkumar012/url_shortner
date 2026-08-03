@@ -149,8 +149,10 @@ export default function Dashboard() {
   }, [links]);
 
   const handleCopy = async (link: LinkItem) => {
+const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
+      // console.log(shortUrl);
     try {
-      await navigator.clipboard.writeText(`https://${link.shortUrl}`);
+      await navigator.clipboard.writeText(shortUrl);
     } catch {
       // Clipboard can be unavailable on non-secure localhost contexts.
     }
