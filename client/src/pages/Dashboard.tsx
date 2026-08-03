@@ -593,7 +593,7 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
                               className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-on-surface"
                               title="Analytics"
 
-                              onClick={()=>{navigate('/analy')}}
+                              onClick={()=>{navigate(`/analy?shortCode=${link.shortUrl}`)}}
                             >
                               <ChartNoAxesCombined size={20} />
                             </button>
