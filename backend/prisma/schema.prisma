@@ -66,5 +66,20 @@ model Url {
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  analytics   Analytics[]
+
   @@index([userId])
+}
+
+model Analytics {
+  id        String   @id @default(cuid())
+  urlId     String
+  url       Url      @relation(fields: [urlId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  referer   String?
+  createdAt DateTime @default(now())
+
+  @@index([urlId])
+  @@map("analytics")
 }

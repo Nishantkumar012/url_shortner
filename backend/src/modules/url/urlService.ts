@@ -4,6 +4,7 @@ import { isReservedWord } from "../../utils/reservedWords";
 import { AppError } from "../../common/error";
 import { Prisma } from "@prisma/client";
 import ms, { type StringValue} from "ms"
+import {redis} from "../../core/redis"
 
 
 // Creates a URL for the given owner. If `alias` is supplied it becomes the
@@ -32,9 +33,19 @@ export async function createUrl(
     
     const expires = expiresAt? new Date(Date.now() + ms(expiresAt as StringValue)):null;
   try {
-    return await prisma.url.create({
+     const url =await prisma.url.create({
       data: { originalUrl, shortCode, userId ,expiresAt:expires},
-    });
+    }); 
+
+       await  redis.set(`url:${shortCode}`,JSON.stringify({
+          originalUrl,
+          expiresAt:expires,
+      }))
+          
+      // const red = await redis.get(`url:${shortCode}`)
+      // console.log("red is",red);
+
+    return url;
   } catch (err) {
     // Race-condition safety: a concurrent create could have claimed the code
     // between our check and the insert. For an auto-generated code we retry

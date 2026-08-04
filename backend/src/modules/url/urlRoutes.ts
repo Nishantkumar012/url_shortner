@@ -5,7 +5,7 @@ import {
   deleteShortUrl,
   getAllShortUrl
 } from "./urlController";
-import { redirectController } from "./redirectController";
+import { redirectController } from "../redirect/redirectController";
 import { authGuard } from "../../middlewares/authGuard";
 import { validateBody } from "../../middlewares/validate";
 import { urlAliasSchema, urlUpdateSchema } from "./urlSchema";
