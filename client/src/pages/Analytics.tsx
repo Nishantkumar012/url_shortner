@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Trophy,
   Activity,
+  Globe,
+  Clock3,
 } from "lucide-react";
 import { ThreeBackground } from "../App";
 import axiosinstance from "../utils/axiosInstance";
@@ -17,8 +19,6 @@ import { useSearchParams } from "react-router";
 
 const PROFILE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBcYmJZF_M66dOjAkShFEruJ1vFQKOjZtYM2H0otAH3GkAWjezBokOSZLKVvAWXR4PkZJR-YkVviCJCZAQRUhgDzQRo4omO8MrXIzC_2Cff-lfXlVcLI7_2EyseIrf5Qm_1nme6b2aq9isimeRxPlaKWlfBeN806cWyi17MwvO3cDgFvmd7T87ZGa4WJr_jECYCGshwkZ9dNC1Ri29uh-ByRG2sQX8I7cO5C5YK9EhXF41N2iTLy01Y";
-
-const DAY = 86_400_000;
 
 const COLORS = {
   primary: "#7C3AED",
@@ -30,6 +30,12 @@ const COLORS = {
 
 const PALETTE = [COLORS.primary, COLORS.secondary, COLORS.tertiary];
 
+const DEVICE_COLORS: Record<string, string> = {
+  desktop: COLORS.primary,
+  mobile: COLORS.secondary,
+  tablet: COLORS.tertiary,
+};
+
 type AnalyticsLink = {
   id: string;
   destination: string;
@@ -39,14 +45,28 @@ type AnalyticsLink = {
   expiresAt: string | null;
 };
 
+type AnalyticsPayload = {
+  total: number;
+  totalUrls?: number;
+  timeline: Record<string, number>;
+  devices: Record<string, number>;
+  browsers: Record<string, number>;
+  oses: Record<string, number>;
+  referrers: Record<string, number>;
+  recent: { time: string; browser: string; device: string; referrer: string }[];
+};
+
 export default function Analytics() {
   const [links, setLinks] = useState<AnalyticsLink[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<string>("all");
+  const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [searchParams] = useSearchParams();
 
   // Deep-linking support: /analy?shortCode=xyz preselects that link.
   const requestedShortCode = searchParams.get("shortCode");
+
+  const [selected, setSelected] = useState<string>(requestedShortCode ?? "all");
 
   useEffect(() => {
     if (requestedShortCode) {
@@ -61,6 +81,8 @@ export default function Analytics() {
       const response: any = await axiosinstance.get("/url/");
       const urls = Array.isArray(response?.data) ? response.data : [];
 
+      // console.log("urls are",urls);
+
       const mapped: AnalyticsLink[] = urls.map((url: any) => ({
         id: url._id || url.id,
         destination: url.originalUrl || url.destination,
@@ -69,7 +91,7 @@ export default function Analytics() {
         createdAt: url.createdAt,
         expiresAt: url.expiresAt || null,
       }));
-
+      //  console.log("lets check mapped ", mapped);
       setLinks(mapped);
     } catch (error) {
       console.error("Failed to fetch analytics links:", error);
@@ -82,6 +104,27 @@ export default function Analytics() {
   useEffect(() => {
     fetchLinks();
   }, []);
+
+  // Fetch real per-click analytics for the selected link (or the overview
+  // across all links when "all" is selected).
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const endpoint =
+          selected === "all" ? "/analytics/overview" : `/analytics/${selected}`;
+        const res: any = await axiosinstance.get(endpoint);
+        setAnalytics(res?.data ?? null);
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error);
+        setAnalytics(null);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [selected]);
 
   const allSortedLinks = useMemo(
     () => [...links].sort((a, b) => b.clickCount - a.clickCount),
@@ -148,31 +191,25 @@ export default function Analytics() {
     { label: "Expired", value: expiredCount, color: COLORS.muted },
   ];
 
-  // Bucket links by how long ago they were created.
-  const ageBuckets = useMemo(() => {
-    const now = Date.now();
-    const buckets = [
-      { label: "Last 7 days", count: 0 },
-      { label: "Last 30 days", count: 0 },
-      { label: "Last 90 days", count: 0 },
-      { label: "Older", count: 0 },
-    ];
-
-    visibleLinks.forEach((l) => {
-      const age = now - new Date(l.createdAt).getTime();
-      if (age <= 7 * DAY) buckets[0].count++;
-      else if (age <= 30 * DAY) buckets[1].count++;
-      else if (age <= 90 * DAY) buckets[2].count++;
-      else buckets[3].count++;
-    });
-
-    return buckets;
-  }, [visibleLinks]);
-
   const selectedLabel = selected === "all" ? "All Links" : selected;
   const showEmpty = !loading && visibleLinks.length === 0;
   const shareOf = (value: number, total: number) =>
     total ? Math.round((value / total) * 100) : 0;
+
+  // Breakdown slices for the per-click panels (fed by /analytics endpoints).
+  const deviceEntries = useMemo(
+    () => (analytics ? sortEntries(analytics.devices) : []),
+    [analytics],
+  );
+
+  const deviceSegments = useMemo(
+    () =>
+      deviceEntries.map(([label, value], i) => ({
+        value,
+        color: DEVICE_COLORS[label] ?? PALETTE[i % PALETTE.length],
+      })),
+    [deviceEntries],
+  );
 
   // console.log("visible clicks", visibleLinks);
 
@@ -338,6 +375,27 @@ export default function Analytics() {
               </SummaryCard>
             </div>
 
+            {/* CLICKS OVER TIME */}
+            <section className="glass-card mb-stack-lg rounded-xl p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="font-headline-md text-headline-md">
+                  Clicks Over Time
+                </h3>
+
+                <span className="font-body-sm text-on-surface-variant">
+                  {selectedLabel}
+                </span>
+              </div>
+
+              {analyticsLoading ? (
+                <ChartSkeleton />
+              ) : analytics && analytics.total > 0 ? (
+                <ClicksOverTime timeline={analytics.timeline} />
+              ) : (
+                <EmptyState message="No clicks recorded yet. Share your link to start collecting data." />
+              )}
+            </section>
+
             {/* BENTO GRID */}
             <div className="grid grid-cols-12 gap-stack-md">
               {/* CLICKS BY LINK CHART */}
@@ -494,98 +552,165 @@ export default function Analytics() {
                 )}
               </section>
 
-              {/* STATUS + AGE */}
-              <div className="col-span-12 grid grid-cols-1 gap-stack-md md:grid-cols-2 lg:col-span-6">
-                {/* LINK STATUS */}
-                <section className="glass-card flex flex-col rounded-xl p-8">
-                  <h3 className="mb-8 font-headline-md text-headline-md">
-                    Link Status
-                  </h3>
+              {/* LINK STATUS */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 lg:col-span-6">
+                <h3 className="mb-8 font-headline-md text-headline-md">
+                  Link Status
+                </h3>
 
-                  {showEmpty ? (
-                    <EmptyState />
-                  ) : (
-                    <>
-                      <div className="relative flex flex-grow items-center justify-center">
-                        <Donut
-                          segments={statusSegments.map((s) => ({
-                            value: s.value,
-                            color: s.color,
-                          }))}
-                        />
+                {showEmpty ? (
+                  <EmptyState />
+                ) : (
+                  <>
+                    <div className="relative flex flex-grow items-center justify-center">
+                      <Donut
+                        segments={statusSegments.map((s) => ({
+                          value: s.value,
+                          color: s.color,
+                        }))}
+                      />
 
-                        <div className="absolute flex flex-col items-center">
-                          <span className="font-headline-md text-headline-md">
-                            {activeCount}
-                          </span>
+                      <div className="absolute flex flex-col items-center">
+                        <span className="font-headline-md text-headline-md">
+                          {activeCount}
+                        </span>
 
-                          <span className="font-label-md text-on-surface-variant">
-                            Active
-                          </span>
-                        </div>
+                        <span className="font-label-md text-on-surface-variant">
+                          Active
+                        </span>
                       </div>
-
-                      <div className="mt-8 space-y-2">
-                        <DeviceRow
-                          label="Active"
-                          value={activeCount.toString()}
-                          dot={COLORS.tertiary}
-                        />
-
-                        <DeviceRow
-                          label="Expired"
-                          value={expiredCount.toString()}
-                          dot={COLORS.muted}
-                        />
-                      </div>
-                    </>
-                  )}
-                </section>
-
-                {/* LINKS BY AGE */}
-                <section className="glass-card flex flex-col rounded-xl p-8">
-                  <h3 className="mb-8 font-headline-md text-headline-md">
-                    Links by Age
-                  </h3>
-
-                  {showEmpty ? (
-                    <EmptyState />
-                  ) : (
-                    <div className="flex-grow space-y-6">
-                      {ageBuckets.map((bucket) => {
-                        const pct = shareOf(
-                          bucket.count,
-                          visibleLinks.length,
-                        );
-
-                        return (
-                          <div key={bucket.label} className="space-y-2">
-                            <div className="flex justify-between font-label-md text-on-surface-variant">
-                              <span>{bucket.label}</span>
-                              <span>
-                                {bucket.count} · {pct}%
-                              </span>
-                            </div>
-
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
-                              <div
-                                className={`h-full rounded-full ${
-                                  pct >= 50
-                                    ? "bg-primary"
-                                    : pct >= 25
-                                      ? "bg-secondary"
-                                      : "bg-surface-container-highest"
-                                }`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
-                  )}
-                </section>
-              </div>
+
+                    <div className="mt-8 space-y-2">
+                      <DeviceRow
+                        label="Active"
+                        value={activeCount.toString()}
+                        dot={COLORS.tertiary}
+                      />
+
+                      <DeviceRow
+                        label="Expired"
+                        value={expiredCount.toString()}
+                        dot={COLORS.muted}
+                      />
+                    </div>
+                  </>
+                )}
+              </section>
+            </div>
+
+            {/* DEVICE / SOURCE / RECENT BREAKDOWN */}
+            <div className="mt-stack-lg grid grid-cols-12 gap-stack-md">
+              {/* DEVICES */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 md:col-span-6 lg:col-span-3">
+                <h3 className="mb-6 font-headline-md text-headline-md">
+                  Devices
+                </h3>
+
+                {analyticsLoading ? (
+                  <ChartSkeleton />
+                ) : analytics && analytics.total > 0 ? (
+                  <>
+                    <div className="relative flex flex-grow items-center justify-center">
+                      <Donut
+                        segments={deviceSegments.map((s) => ({
+                          value: s.value,
+                          color: s.color,
+                        }))}
+                      />
+
+                      <div className="absolute flex flex-col items-center">
+                        <span className="font-headline-md text-headline-md">
+                          {analytics.total.toLocaleString()}
+                        </span>
+
+                        <span className="font-label-md text-on-surface-variant">
+                          clicks
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 space-y-2">
+                      {deviceEntries.map(([label, value], i) => (
+                        <DeviceRow
+                          key={label}
+                          label={capitalize(label)}
+                          value={value.toLocaleString()}
+                          dot={DEVICE_COLORS[label] ?? PALETTE[i % PALETTE.length]}
+                          sub={`${shareOf(value, analytics.total)}%`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <EmptyState message="No clicks yet" />
+                )}
+              </section>
+
+              {/* BROWSERS + OS */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 md:col-span-6 lg:col-span-3">
+                <h3 className="mb-6 font-headline-md text-headline-md">
+                  Browsers
+                </h3>
+
+                {analyticsLoading ? (
+                  <ChartSkeleton />
+                ) : analytics && analytics.total > 0 ? (
+                  <div className="custom-scrollbar flex-grow space-y-6 overflow-y-auto">
+                    <div>
+                      <p className="mb-2 font-label-md text-on-surface-variant">
+                        Browsers
+                      </p>
+                      <BreakdownList
+                        entries={topEntries(analytics.browsers, 6)}
+                        total={analytics.total}
+                      />
+                    </div>
+
+                    <div>
+                      <p className="mb-2 font-label-md text-on-surface-variant">
+                        Operating Systems
+                      </p>
+                      <BreakdownList
+                        entries={topEntries(analytics.oses, 6)}
+                        total={analytics.total}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <EmptyState message="No clicks yet" />
+                )}
+              </section>
+
+              {/* TOP REFERRERS */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 md:col-span-6 lg:col-span-3">
+                <h3 className="mb-6 font-headline-md text-headline-md">
+                  Top Referrers
+                </h3>
+
+                {analyticsLoading ? (
+                  <ChartSkeleton />
+                ) : analytics && Object.keys(analytics.referrers).length > 0 ? (
+                  <ReferrerList referrers={analytics.referrers} />
+                ) : (
+                  <EmptyState message="No referrer data yet" />
+                )}
+              </section>
+
+              {/* RECENT CLICKS */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 md:col-span-6 lg:col-span-3">
+                <h3 className="mb-6 font-headline-md text-headline-md">
+                  Recent Clicks
+                </h3>
+
+                {analyticsLoading ? (
+                  <ChartSkeleton />
+                ) : analytics && analytics.recent.length > 0 ? (
+                  <RecentClicks recent={analytics.recent} />
+                ) : (
+                  <EmptyState message="No clicks yet" />
+                )}
+              </section>
             </div>
           </>
         )}
@@ -724,10 +849,12 @@ function DeviceRow({
   label,
   value,
   dot,
+  sub,
 }: {
   label: string;
   value: string;
   dot: string;
+  sub?: string;
 }) {
   return (
     <div className="flex items-center justify-between">
@@ -736,7 +863,198 @@ function DeviceRow({
         <span className="font-body-sm">{label}</span>
       </div>
 
-      <span className="font-code text-code">{value}</span>
+      <span className="font-code text-code">
+        {value}
+        {sub ? (
+          <span className="ml-2 text-on-surface-variant">{sub}</span>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+/* ---------------- ANALYTICS HELPERS ---------------- */
+
+const capitalize = (s: string) =>
+  s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+// Sort a `{ label: count }` object by count, descending.
+function sortEntries(obj: Record<string, number>): [string, number][] {
+  return Object.entries(obj).sort((a, b) => b[1] - a[1]);
+}
+
+function topEntries(obj: Record<string, number>, n: number): [string, number][] {
+  return sortEntries(obj).slice(0, n);
+}
+
+function formatDay(day: string) {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function relativeTime(iso: string) {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function ChartSkeleton() {
+  return (
+    <div className="flex h-full min-h-[160px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
+/* Clicks-per-day bar chart. Matches the existing "Clicks by Link" bar
+   style — fully visible even with a single day of data. */
+function ClicksOverTime({ timeline }: { timeline: Record<string, number> }) {
+  const entries = Object.entries(timeline).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
+  const total = entries.reduce((sum, [, v]) => sum + v, 0);
+  const max = Math.max(...entries.map(([, v]) => v), 1);
+
+  if (entries.length === 0) return null;
+
+  // Cap at 30 bars so labels stay readable.
+  const display = entries.length > 30 ? entries.slice(-30) : entries;
+
+  return (
+    <div>
+      <div className="flex items-end gap-1" style={{ height: 200 }}>
+        {display.map(([day, count]) => {
+          const height = Math.max(8, Math.round((count / max) * 190));
+
+          return (
+            <div
+              key={day}
+              title={`${day} — ${count.toLocaleString()} click${count === 1 ? "" : "s"}`}
+              className="group flex flex-1 flex-col items-center justify-end gap-1"
+            >
+              <span className="font-code text-[10px] text-on-surface-variant opacity-0 transition-opacity group-hover:opacity-100">
+                {count.toLocaleString()}
+              </span>
+
+              <div
+                className="w-full rounded-t-sm bg-primary/25 transition-all duration-300 hover:bg-[#7C3AED] group-hover:bg-primary/60"
+                style={{ height: `${height}px` }}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3 flex justify-between font-label-md text-on-surface-variant">
+        <span>{formatDay(display[0][0])}</span>
+
+        <span>
+          {total.toLocaleString()} clicks · {display.length} day
+          {display.length === 1 ? "" : "s"}
+        </span>
+
+        <span>{formatDay(display[display.length - 1][0])}</span>
+      </div>
+    </div>
+  );
+}
+
+/* Simple `label: value (sub%)` rows for browser/OS breakdowns. */
+function BreakdownList({
+  entries,
+  total,
+}: {
+  entries: [string, number][];
+  total: number;
+}) {
+  return (
+    <div className="space-y-2">
+      {entries.map(([label, value], i) => (
+        <DeviceRow
+          key={label}
+          label={capitalize(label)}
+          value={value.toLocaleString()}
+          dot={PALETTE[i % PALETTE.length]}
+          sub={total ? `${Math.round((value / total) * 100)}%` : undefined}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ReferrerList({ referrers }: { referrers: Record<string, number> }) {
+  const entries = sortEntries(referrers).slice(0, 8);
+  const total = Object.values(referrers).reduce((sum, v) => sum + v, 0);
+
+  return (
+    <div className="custom-scrollbar flex-grow space-y-4 overflow-y-auto">
+      {entries.map(([host, count]) => {
+        const share = total ? Math.round((count / total) * 100) : 0;
+
+        return (
+          <div
+            key={host}
+            className="flex items-center justify-between rounded-lg border border-[#7C3AED]/10 bg-[#7C3AED]/10 p-3"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/10 font-code text-code text-on-surface-variant">
+                <Globe size={14} />
+              </span>
+
+              <span className="block truncate font-code text-code text-primary">
+                {host}
+              </span>
+            </div>
+
+            <div className="shrink-0 text-right">
+              <span className="block font-code text-code text-on-surface">
+                {count.toLocaleString()}
+              </span>
+
+              <span className="block text-[10px] text-on-surface-variant">
+                {share}%
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RecentClicks({
+  recent,
+}: {
+  recent: AnalyticsPayload["recent"];
+}) {
+  return (
+    <div className="custom-scrollbar flex-grow space-y-4 overflow-y-auto">
+      {recent.map((click, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/5 p-3"
+        >
+          <div className="min-w-0">
+            <span className="block truncate font-body-sm text-on-surface">
+              {capitalize(click.device)} · {click.browser}
+            </span>
+
+            <span className="block truncate text-xs text-on-surface-variant">
+              {click.referrer}
+            </span>
+          </div>
+
+          <span className="flex shrink-0 items-center gap-1 font-code text-code text-on-surface-variant">
+            <Clock3 size={12} />
+            {relativeTime(click.time)}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
