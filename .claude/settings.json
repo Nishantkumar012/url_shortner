@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -lat 'C:/Users/Nishant/.claude/sessions/' 2>/dev/null | head -10; echo '---DAEMON DIR---'; ls 'C:/Users/Nishant/.claude/daemon/' 2>/dev/null | head)",
+      "Read(//c/Users/Nishant/.claude/sessions/**)",
+      "Read(//c/Users/Nishant/.claude/daemon/**)",
+      "Bash(cat 'C:/Users/Nishant/.claude/sessions/10380.json')",
+      "Bash(wmic process *)",
+      "Bash(grep -vE '^$')",
+      "Bash(rm -f backend/scripts/clear-analytics.ts)",
+      "Bash(rmdir backend/scripts)"
+    ]
+  }
+}

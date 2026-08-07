@@ -26,18 +26,33 @@ axiosinstance.interceptors.request.use(
 
 // Response Interceptor: Global Error Handling & Token Refresh
 axiosinstance.interceptors.response.use(
-  (response) => response.data, // Directly return response data
+  (response) => {
+    console.log("AXIOS RESPONSE:", response.config.url, response.data);
+    return response.data; // Directly return response data
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and we haven't already tried to refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If 401, we haven't already tried to refresh, and this isn't the refresh
+    // call itself (which would otherwise recurse forever on a bad cookie),
+    // try to refresh.
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
       originalRequest._retry = true;
 
       try {
         // Try to refresh the access token using the httpOnly refresh token cookie
         const response = await axiosinstance.post('/auth/refresh');
-        const newToken = response.data?.data?.accessToken;
+        console.log("response is ",response);
+        console.log("data ",response.data);
+
+        // The response interceptor above already unwraps to the JSON body,
+        // i.e. { status, data: { accessToken } } — read one level, not two.
+        const newToken = response.data?.accessToken;
+        console.log("new token is", newToken);
 
         if (newToken) {
           // Store the new access token

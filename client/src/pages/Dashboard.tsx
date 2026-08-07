@@ -95,7 +95,7 @@ export default function Dashboard() {
       setLoading(true);
       const response = await axiosinstance.get("/url/");
 
-      console.log("response urls", response);
+      // console.log("response urls", response);
       // Map backend response to LinkItem format
       const userLinks: LinkItem[] = response.data.map((url: any) => ({
         id: url._id || url.id,
