@@ -6,7 +6,7 @@
 
 ## 📖 Overview
 
-LinkForge is more than just a URL shortener.
+SnapLink is more than just a URL shortener.
 
 The primary goal of this project is to build a **production-grade SaaS application** while learning how modern backend systems are designed, developed, and scaled.
 
