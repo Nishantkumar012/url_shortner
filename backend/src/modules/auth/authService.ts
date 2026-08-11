@@ -3,16 +3,10 @@ import { hashPassword } from "../../utils/password";
 import { AppError } from "../../common/error";
 import type { z } from "zod";
 import { loginSchema, registerSchema } from "./authSchema";
-import { signRefreshToken,hashToken, signAccessToken, verifyHashToken, verifyRefreshToken } from "../../utils/jwt";
+import { signRefreshToken,hashToken, signAccessToken, verifyHashToken, verifyRefreshToken, signEmailVerificationToken } from "../../utils/jwt";
 import { verifyPassword } from "../../utils/password";
 import { env} from "../../config/env";
-
-
-
-
-
-
-
+import { enqueueEmail } from "../../jobs/emailJobs";
 
 
 
@@ -73,8 +67,15 @@ export async function registerUser(input: RegisterInput) {
 
   const tokens = await createSession(user.id);
 
-  // console.log("copy data from service ",tokens);
-
+  // Queue the verification email — fire-and-forget, never awaited so a slow
+  // Redis/worker must not block registration.
+  const emailToken = signEmailVerificationToken(user.id);
+  enqueueEmail({
+    type: "verify-email",
+    email: user.email,
+    name: user.name ?? "",
+    token: emailToken,
+  });
 
   return {
     user,

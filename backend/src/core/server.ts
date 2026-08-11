@@ -8,6 +8,7 @@ import { prisma } from "../utils/prisma";
 import { redis } from "./redis";
 import { emailQueue, analyticsQueue } from "./queue";
 import { analyticsWorker } from "../workers/analyticsWorker";
+import { emailWorker } from "../workers/emailWorker";
 
 const httpServer: Server = createServer(app);
 
@@ -22,7 +23,7 @@ async function shutdown(signal: string) {
   logger.info(`Received ${signal}, shutting down...`);
   httpServer.close();
   await Promise.all([emailQueue.close(), analyticsQueue.close()]);
-  await analyticsWorker.close();
+  await Promise.all([emailWorker.close(), analyticsWorker.close()]);
   await prisma.$disconnect();
   await redis.quit();
   logger.info("Shutdown complete");

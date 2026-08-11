@@ -12,10 +12,33 @@ export function signAccessToken(userId:string):string{
 }
 
 export function signRefreshToken(userId:string):string{
-      
+
      return jwt.sign({sub:userId}, env.JWT_REFRESH_SECRET,{
         expiresIn: `${env.REFRESH_TOKEN_TTL_DAYS}d`
      })
+}
+
+/**
+ * One-time email verification token (24h). The `purpose` claim distinguishes
+ * it from access tokens so the verify-email handler can reject wrong tokens.
+ */
+export function signEmailVerificationToken(userId: string): string {
+  return jwt.sign(
+    { sub: userId, purpose: "email-verification" },
+    env.JWT_ACCESS_SECRET,
+    { expiresIn: "24h" }
+  );
+}
+
+export function verifyEmailVerificationToken(token: string): string {
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as {
+    sub: string;
+    purpose: string;
+  };
+  if (payload.purpose !== "email-verification") {
+    throw new Error("Invalid verification token");
+  }
+  return payload.sub;
 }
 
 export function verifyAccessToken(token: string): {sub: string}{

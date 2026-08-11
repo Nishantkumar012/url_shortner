@@ -19,6 +19,15 @@ const schema = z.object({
     "trace",
     "silent",
   ]).default("info"),
+
+  // Emails
+  APP_NAME: z.string().default("URL Shortener"),
+  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  MAIL_FROM: z.string().email().default("no-reply@example.com"),
 });
 
 const parsed = schema.safeParse(process.env);
