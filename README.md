@@ -1,4 +1,4 @@
-# 🔗 LinkForge
+# 🔗 SnapLink
 
 > A production-ready URL Shortener SaaS built to learn advanced backend engineering, scalable architecture, and real-world software development practices.
 
