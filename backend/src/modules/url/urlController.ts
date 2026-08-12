@@ -51,6 +51,7 @@ export async function deleteShortUrl(req: Request, res: Response) {
   }
 
   const url = await deleteUrl(shortCode, userId);
+  console.log("url is", url);
 
   res.status(200).json({ status: "success", data: url });
 }
@@ -63,6 +64,6 @@ export async function getAllShortUrl(req:Request,res:Response){
 
     const urls = await getAllUrl(userId);
 
-    res.status(200).json({ status: "success", data: urls.urls});
+    res.status(200).json({ status: "success", data: urls});
     
 }

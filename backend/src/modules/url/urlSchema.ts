@@ -22,7 +22,8 @@ export const urlAliasSchema = z.object({
     expiresAt: z
     .string()
     .regex(/^\d+(m|h|d)$/, "Use format like 30m,2h,15d")
-    .optional()
+    .optional(),
+    
 });
 
 // Update payload: only the new destination URL.

@@ -41,6 +41,8 @@ type LinkItem = {
   created: string;
   clicks: string;
   status: LinkStatus;
+  isDeleted:boolean
+  
 };
 
 const initialLinks: LinkItem[] = [
@@ -52,6 +54,8 @@ const initialLinks: LinkItem[] = [
     created: "Oct 24, 2023",
     clicks: "4,281",
     status: "Active",
+  isDeleted:false
+
   },
   {
     id: 2,
@@ -61,6 +65,8 @@ const initialLinks: LinkItem[] = [
     created: "Nov 02, 2023",
     clicks: "842",
     status: "Paused",
+  isDeleted:false
+
   },
   {
     id: 3,
@@ -70,6 +76,8 @@ const initialLinks: LinkItem[] = [
     created: "Oct 12, 2023",
     clicks: "12,903",
     status: "Active",
+  isDeleted:false
+
   },
 ];
 
@@ -108,6 +116,7 @@ export default function Dashboard() {
         }),
         clicks: url.clickCount?.toString() || "0",
         status: url.status || "Active",
+        isDeleted:url.isDeleted
       }));
       setLinks(userLinks);
     } catch (error) {
@@ -135,6 +144,8 @@ export default function Dashboard() {
         link.status.toLowerCase().includes(value),
     );
   }, [links, search]);
+
+  
 
   // Calculate stats from user's URLs
   const stats = useMemo(() => {
@@ -170,10 +181,20 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
     }, 2000);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async(id: number,shortcode:string) => {
+        
+    try {
+             await axiosinstance.delete(`url/${shortcode}`)
+
+             console.log(shortcode)
     setLinks((current) =>
       current.filter((link) => link.id !== id),
     );
+      
+    } catch (error) {
+         console.log("error", error);
+    }
+   
   };
 
   // Create new short URL
@@ -210,6 +231,8 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
         }),
         clicks: "0",
         status: "Active",
+        isDeleted:false
+
       };
 
       setLinks((current) => [newLink, ...current]);
@@ -608,7 +631,7 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
 
                             {/* Delete */}
                             <button
-                              onClick={() => handleDelete(link.id)}
+                              onClick={() => handleDelete(link.id,link.shortUrl)}
                               className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-error/10 hover:text-error"
                               title="Delete"
                             >
