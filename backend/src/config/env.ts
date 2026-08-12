@@ -28,6 +28,12 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().email().default("no-reply@example.com"),
+
+  // Admin static credentials
+  ADMIN_USERNAME: z.string().default("admin"),
+  ADMIN_PASSWORD: z.string().default("changeme-admin"),
+  ADMIN_TOKEN_SECRET: z.string().default("dev-admin-token-secret-change-me"),
+  ADMIN_TOKEN_TTL: z.string().default("24h"),
 });
 
 const parsed = schema.safeParse(process.env);

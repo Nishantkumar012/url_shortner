@@ -5,6 +5,7 @@ import { errorHandler } from "../middlewares/errorHandler";
 import {authRoutes} from "../modules/auth/authRoutes"
 import {urlRoutes} from "../modules/url/urlRoutes"
 import {analyticsRoutes} from "../modules/analytics/analyticsRoutes"
+import {adminRoutes} from "../modules/admin/adminRoutes"
 
 
 export const app: Express = express();
@@ -17,5 +18,6 @@ app.use("/", healthRouter);
 app.use("/auth", authRoutes)
 app.use("/url", urlRoutes)
 app.use("/analytics", analyticsRoutes)
+app.use("/admin", adminRoutes)
 app.use(errorHandler);   // MUST be last
 

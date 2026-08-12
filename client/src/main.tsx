@@ -11,6 +11,9 @@ import ProtectedRoute from './components/ProtectedRoute.tsx'
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import Analytics from './pages/Analytics.tsx'
+import AdminLogin from './pages/AdminLogin.tsx'
+import AdminDashboard from './pages/AdminDashboard.tsx'
+import AdminRoute from './components/AdminRoute.tsx'
 
 const router = createBrowserRouter([
   {
@@ -39,6 +42,20 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <Analytics/>
       </ProtectedRoute>
+    )
+
+  },{
+       path:"/admin",
+       element:(
+          <AdminLogin/>
+       )
+  },
+  {
+    path: "/admin/dashboard",
+    element: (
+      <AdminRoute>
+        <AdminDashboard/>
+      </AdminRoute>
     )
   }
 ]);

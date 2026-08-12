@@ -39,7 +39,8 @@ axiosinstance.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes("/auth/refresh")
+      !originalRequest.url?.includes("/auth/refresh") &&
+      !originalRequest.url?.includes("/admin")
     ) {
       originalRequest._retry = true;
 
@@ -70,8 +71,12 @@ axiosinstance.interceptors.response.use(
       }
     }
 
-    // For other 401 errors or if refresh failed
-    if (error.response?.status === 401) {
+    // For other 401 errors or if refresh failed (admin endpoints excluded:
+    // the admin session uses its own token + /admin redirect in adminApi)
+    if (
+      error.response?.status === 401 &&
+      !originalRequest.url?.includes("/admin")
+    ) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
