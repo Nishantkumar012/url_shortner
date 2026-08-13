@@ -87,11 +87,17 @@ export default function Dashboard() {
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
     originalUrl: "",
     alias: "",
     expiresAt: "",
   });
+  const [updateForm,setUpdateForm] = useState({
+    originalUrl: "",
+  })
+  // The link currently being edited, or null when the update modal is closed.
+  const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -195,6 +201,47 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
          console.log("error", error);
     }
    
+  };
+
+  // Open the update modal. The field starts empty so you can paste/type a fresh
+// destination; `editingLink` records WHICH link is being edited (its shortCode
+// is the PATCH target) and is used to refresh that row on success.
+  const openUpdateModal = (link: LinkItem) => {
+    setEditingLink(link);
+    setUpdateForm({ originalUrl: "" });
+    setError("");
+    setShowUpdateModal(true);
+  };
+
+  // Update the destination of an existing short URL
+  const handleUpdateUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLink) return;
+    setError("");
+    setCreating(true);
+
+    try {
+      await axiosinstance.patch(`/url/${editingLink.shortUrl}`, {
+        originalUrl: updateForm.originalUrl,
+      });
+
+      // Reflect the new destination in the list
+      setLinks((current) =>
+        current.map((link) =>
+          link.id === editingLink.id
+            ? { ...link, destination: updateForm.originalUrl }
+            : link,
+        ),
+      );
+
+      setShowUpdateModal(false);
+      setEditingLink(null);
+      setUpdateForm({ originalUrl: "" });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update URL");
+    } finally {
+      setCreating(false);
+    }
   };
 
   // Create new short URL
@@ -357,6 +404,118 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
           </div>
         </div>
       )}
+
+        
+         {/* Create URL Modal */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel relative w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl">
+            {/* Modal Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
+                Upate Short URL
+              </h2>
+              <button
+                onClick={() => {
+                  setShowUpdateModal(false);
+                  setError("");
+                  setEditingLink(null);
+                  setUpdateForm({ originalUrl: "" })
+                }}
+                className="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-white/10 hover:text-on-surface"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleUpdateUrl} className="space-y-4">
+              {/* Original URL */}
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  New Destination URL *
+                </label>
+                <input
+                  type="url"
+                  value={updateForm.originalUrl}
+                  onChange={(e) =>
+                    setUpdateForm({ ...updateForm, originalUrl: e.target.value })
+                  }
+                  placeholder="https://example.com/your-long-url"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Custom Alias */}
+
+{/*               
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  Custom Alias (optional)
+                </label>
+                <input
+                  type="text"
+                  value={createForm.alias}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, alias: e.target.value })
+                  }
+                  placeholder="my-custom-link"
+                  minLength={3}
+                  maxLength={32}
+                  pattern="[a-zA-Z0-9_-]+"
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant/60">
+                  Letters, numbers, - and _ only (3-32 chars)
+                </p>
+              </div> */}
+
+              {/* Expiration */}
+{/*               
+              <div>
+                <label className="mb-2 block text-label-md font-medium text-on-surface-variant">
+                  Expiration (optional)
+                </label>
+                <input
+                  type="text"
+                  value={createForm.expiresAt}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, expiresAt: e.target.value })
+                  }
+                  placeholder="30m, 2h, 15d"
+                  pattern="\d+(m|h|d)"
+                  className="w-full rounded-xl border border-white/10 bg-surface-container-low px-4 py-3 text-body-md outline-none transition-all placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant/60">
+                  Format: number + unit (m=minutes, h=hours, d=days)
+                </p>
+              </div> */}
+
+              {/* Error Message */}
+              {error && (
+                <p className="rounded-lg bg-error/10 px-4 py-2 text-sm text-error">
+                  {error}
+                </p>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={creating || !updateForm.originalUrl}
+                className="w-full rounded-lg bg-[#7C3AED] px-6 py-3 font-label-md font-bold text-white shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all hover:bg-[#8B5CF6] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creating ? "Updating..." : "Update Short URL"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+
+
+
+
 
       {/* Main Shell */}
       <div className="relative z-10 flex h-screen overflow-hidden">
@@ -625,6 +784,8 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
                             <button
                               className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-on-surface"
                               title="Edit"
+
+                                onClick={()=> openUpdateModal(link)}
                             >
                               <Pencil size={20} />
                             </button>

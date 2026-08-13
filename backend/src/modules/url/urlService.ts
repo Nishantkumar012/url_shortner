@@ -73,11 +73,18 @@ export async function updateUrl(
     throw new AppError(404, "URL not found");
   }
 
-  return prisma.url.update({
+  const update = await prisma.url.update({
     where: { id: existing.id },
     data: { originalUrl: newOriginalUrl },
   });
+
+  await redis.del(`url/${shortCode}`);
+
+    return update;
 }
+
+
+
 
 // Deletes a URL. Scoped to the owner.
 export async function deleteUrl(shortCode: string, userId: string) {
@@ -100,6 +107,9 @@ export async function deleteUrl(shortCode: string, userId: string) {
 return deletedurl
 
 }
+
+
+
 
 export async function getAllUrl(userId: string) {
   const existing = await prisma.url.findMany({
