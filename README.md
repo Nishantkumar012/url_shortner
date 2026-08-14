@@ -1,243 +1,258 @@
 # 🔗 SnapLink
 
-> A production-ready URL Shortener SaaS built to learn advanced backend engineering, scalable architecture, and real-world software development practices.
+> A backend-focused URL Shortener SaaS built with TypeScript, Node.js, PostgreSQL, Redis, and BullMQ.
+
+SnapLink is a URL shortener project built to learn and implement real-world backend engineering concepts. The project focuses on authentication, database design, caching, background jobs, and scalable backend architecture.
+
+The project is being developed incrementally, with each phase focusing on implementing and understanding a specific backend concept.
 
 ---
 
-## 📖 Overview
+## ✨ Features
 
-SnapLink is more than just a URL shortener.
+### 🔐 Authentication
 
-The primary goal of this project is to build a **production-grade SaaS application** while learning how modern backend systems are designed, developed, and scaled.
+* User registration
+* User login
+* JWT-based authentication
+* Access token and refresh token flow
+* Refresh token storage and hashing
+* Protected routes
+* Password hashing using Argon2
+* Request validation using Zod
+* Logout
+* Refresh token handling
 
-This project focuses on writing clean, maintainable code and implementing real-world backend concepts such as authentication, caching, background jobs, analytics, payments, and scalable architecture.
+### 🔗 URL Management
 
-> 📌 The authoritative architecture, module specs, and phased build order live in **[PLANNING.md](./PLANNING.md)**. Read that alongside this file.
+* Create short URLs
+* Generate unique short codes
+* Custom short codes
+* Update URLs
+* Delete URLs
+* User-specific URL management
+* URL expiration
+* Soft deletion
 
----
+### ⚡ Redis Caching
 
-## 🎯 Objectives
+Redis is used to cache URL mappings and improve redirect performance.
 
-- Learn advanced backend development
-- Build a production-ready SaaS application
-- Apply clean architecture & SOLID principles
-- Understand scalable system design
-- Practice production engineering concepts
-- Create a strong portfolio project
+```text
+Client
+   │
+   ▼
+Short URL
+   │
+   ▼
+Redis
+   │
+   ├── Cache Hit ──────► Original URL
+   │
+   └── Cache Miss
+           │
+           ▼
+       PostgreSQL
+           │
+           ▼
+      Store in Redis
+           │
+           ▼
+       Original URL
+```
 
----
+Cache invalidation is performed when URLs are updated or deleted to prevent stale redirect data.
 
-## ✨ Planned Features
+### 📨 Background Jobs
 
-### Authentication
+BullMQ is used for asynchronous background processing.
 
-- User Registration
-- Login
-- Access & Refresh Tokens (rotating)
-- Logout
-- Protected Routes
-- Email Verification
-- Password Reset
-- *(Optional: Google / Gmail OAuth social login)*
+Current implementation includes:
 
-### URL Management
+* Redis-backed queues
+* Background job processing
+* Email-related job infrastructure
 
-- Generate Short URLs
-- Custom Alias (with reserved-word blocklist)
-- Edit / Delete URLs
-- Password Protected URLs
-- URL Expiration
-- Enable / Disable URLs
-- Tags & Folders
+Background jobs allow non-critical operations to be processed outside the main API request flow.
 
-### Redirect Service
+### 🏗️ Backend Architecture
 
-- Fast URL Redirection (Redis-cached)
-- HTTP 301 / 302 Redirects
-- Alias Resolution
-- Expiration & Password Validation
+The backend follows a layered architecture:
 
-### Analytics
+```text
+Controller
+    ↓
+Service
+    ↓
+Repository
+    ↓
+Prisma
+    ↓
+PostgreSQL
+```
 
-- Total Clicks
-- Unique Visitors
-- Browser / Device / Country Statistics
-- Referrer Analytics
-- Daily / Weekly / Monthly Reports
+Each layer has a specific responsibility:
 
-### API Platform
-
-- API Keys (generate / rotate / revoke)
-- Rate Limiting (Redis-backed)
-- Developer APIs
-
-### Team Collaboration
-
-- Workspaces
-- Member Management
-- Role-Based Access (RBAC)
-
-### Subscription System
-
-- Free Plan
-- Pro Plan
-- Monthly / Yearly Billing
-- Plan Upgrade / Downgrade
-
-### Payments
-
-- Razorpay Integration
-- Payment Verification (signature check)
-- Webhooks (idempotent)
-- Subscription Activation
-
-### Admin Panel
-
-- User Management
-- URL Management
-- Reports
-- Abuse Detection
-
-> 💡 **Dashboard, QR Codes, and advanced search/filtering** are part of the broader product vision and may be added after the core backend modules in `PLANNING.md` are complete.
+* **Controller** — Handles HTTP requests and responses
+* **Service** — Contains application and business logic
+* **Repository** — Handles database operations
+* **Prisma** — Provides database access
+* **Middleware/Guards** — Handles authentication and request protection
 
 ---
 
-## 🏗️ Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
 
-- Node.js
-- Express.js
-- TypeScript
+* Node.js
+* Express.js
+* TypeScript
 
 ### Database
 
-- PostgreSQL
-- Prisma ORM
+* PostgreSQL
+* Prisma ORM
 
-### Authentication
+### Authentication & Security
 
-- JWT
-- Refresh Tokens
-- *(Optional: Google OAuth)*
+* JWT
+* Argon2
+* Zod
 
-### Cache
+### Infrastructure
 
-- Redis
-
-### Queue
-
-- BullMQ
-
-### Validation
-
-- Zod
+* Redis
+* BullMQ
 
 ### Logging
 
-- Pino
-
-### Documentation
-
-- Swagger / OpenAPI
-
-### Payments
-
-- Razorpay
-
-### Deployment
-
-- Docker (multi-stage image)
-- Render (backend hosting)
-- *(Optional future: Vercel for a separate frontend)*
+* Pino
 
 ---
 
-## 📚 Backend Concepts Covered
+## 📚 Backend Concepts Implemented
 
-- REST API Design
-- Authentication & Authorization
-- Refresh Token Rotation
-- Role-Based Access Control (RBAC)
-- Clean Architecture & SOLID
-- Repository Pattern
-- Service Layer
-- Manual Dependency Injection
-- Middleware & Guards
-- Database Indexing
-- Redis Caching (write-through + invalidation)
-- Background Workers (BullMQ)
-- Queue Processing
-- Rate Limiting
-- Payment Webhooks (idempotency)
-- Subscription Billing
-- Pagination
-- Search & Filtering
-- Structured Logging (Pino)
-- Health Checks & Graceful Shutdown
-- Docker
-- CI/CD
-- Production Deployment
+* REST API design
+* JWT authentication
+* Access and refresh tokens
+* Password hashing
+* Request validation with Zod
+* Layered backend architecture
+* Repository pattern
+* Prisma ORM
+* PostgreSQL database design
+* Redis caching
+* Cache invalidation
+* Background processing with BullMQ
+* Soft deletion
+* URL expiration
+* Error handling
+* Environment-based configuration
+* Structured logging
 
 ---
 
-## 🚀 Getting Started
+## 🚧 Coming Soon
 
-> 🛠️ Scaffolding lands in **Phase 1** of `PLANNING.md`. The commands below reflect the *target* setup.
+The following features are planned for future phases and are **not implemented yet**.
 
-### Prerequisites
+### 📊 Analytics
 
-- Node.js 18+
-- PostgreSQL
-- Redis
-- (Optional) Docker + Docker Compose
+* Click tracking
+* Unique visitors
+* Browser and device statistics
+* Country statistics
+* Referrer analytics
+* Daily, weekly, and monthly reports
 
-### Target Setup
+### 🔑 Developer API
 
-```bash
-# from the backend/ directory
-cp .env.example .env
-docker compose up -d          # starts PostgreSQL + Redis
-npm install
-npx prisma migrate dev
-npm run dev
-```
+* API key generation
+* API key rotation
+* API key revocation
+* Redis-backed rate limiting
 
-The API will be available at `http://localhost:3000` and Swagger docs at `http://localhost:3000/docs`.
+### 👥 Team & Workspace
+
+* Workspaces
+* Member management
+* Role-based access control
+* Shared URL management
+
+### 💳 SaaS & Payments
+
+* Free and Pro plans
+* Monthly and yearly subscriptions
+* Razorpay integration
+* Payment verification
+* Idempotent payment webhooks
+* Subscription lifecycle management
+
+### 🔒 Advanced URL Features
+
+* Password-protected URLs
+* Enable/disable URLs
+* Tags
+* Folders
+* Reserved alias blocklist
+
+### 👨‍💼 Admin Panel
+
+* User management
+* URL management
+* Abuse detection
+* Admin reports
+
+### 🚀 Infrastructure
+
+* Docker
+* CI/CD
+* Production monitoring
+* Health checks
+* Graceful shutdown
+* Swagger/OpenAPI documentation
 
 ---
 
-## 📁 Documentation
+## 📁 Project Documentation
 
-- **README.md** — This overview
-- **[PLANNING.md](./PLANNING.md)** — Canonical architecture, module specs & phased roadmap
-- **[PHASES.md](./PHASES.md)** — Phase-by-phase cross-off task tracker
-- **[progress.md](./progress.md)** — Work-done tracker (completed items)
-- *DECISIONS.md* (planned) — Key architectural decisions & trade-offs
-
----
-
-## 📈 Development Status
-
-This project is currently under active development.
-
-Development follows the phase-by-phase roadmap in `PLANNING.md`, with each phase focusing on a specific backend concept before moving to the next. Current phase: **Phase 1 — Project Foundation** (not yet scaffolded).
+| File          | Description                               |
+| ------------- | ----------------------------------------- |
+| `README.md`   | Project overview and implemented features |
+| `PLANNING.md` | Architecture and development roadmap      |
+| `PHASES.md`   | Phase-by-phase task tracker               |
+| `progress.md` | Completed implementation tracker          |
 
 ---
 
-## 🎓 Learning Outcome
+## 🚀 Development Status
 
-By the end of this project, the goal is to gain hands-on experience with:
+SnapLink is currently under active development.
 
-- Advanced Backend Development
-- SaaS Architecture
-- Scalable System Design
-- Production Best Practices
-- High-Performance API Development
-- Real-World Software Engineering
+The project is being built incrementally instead of implementing all planned SaaS features at once.
+
+Implemented features are documented in the **Features** section, while planned functionality is listed under **Coming Soon**.
+
+---
+
+## 🎯 Goal
+
+The goal of SnapLink is to gain practical experience building a realistic backend system while learning:
+
+* Backend architecture
+* Authentication and security
+* Database design
+* Caching
+* Background processing
+* API design
+* Scalable backend patterns
+* Production engineering
+
+The project will continue to evolve as new backend concepts and features are implemented.
 
 ---
 
 ## 📄 License
 
-This project is built for learning purposes and may evolve into a production-ready SaaS application.
+This project is currently built for learning purposes and may evolve into a production-ready SaaS application.
