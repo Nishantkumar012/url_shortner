@@ -215,17 +215,6 @@ The following features are planned for future phases and are **not implemented y
 
 ---
 
-## 📁 Project Documentation
-
-| File          | Description                               |
-| ------------- | ----------------------------------------- |
-| `README.md`   | Project overview and implemented features |
-| `PLANNING.md` | Architecture and development roadmap      |
-| `PHASES.md`   | Phase-by-phase task tracker               |
-| `progress.md` | Completed implementation tracker          |
-
----
-
 ## 🚀 Development Status
 
 SnapLink is currently under active development.
