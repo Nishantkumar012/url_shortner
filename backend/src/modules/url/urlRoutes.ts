@@ -3,15 +3,22 @@ import {
   createShortUrl,
   updateShortUrl,
   deleteShortUrl,
-  getAllShortUrl
+  getAllShortUrl,
+  createGuestShortUrl,
+  getGuestRemainingHandler
 } from "./urlController";
 import { redirectController } from "../redirect/redirectController";
 import { authGuard } from "../../middlewares/authGuard";
 import { validateBody } from "../../middlewares/validate";
-import { urlAliasSchema, urlUpdateSchema } from "./urlSchema";
+import { urlAliasSchema, urlUpdateSchema, guestUrlSchema } from "./urlSchema";
 
 
 export const urlRoutes = Router();
+
+// Guest URLs - no auth required. The quota-lookup route must come before the
+// `/:shortCode` catch-all below.
+urlRoutes.get("/guest/remaining", getGuestRemainingHandler);
+urlRoutes.post("/guest", validateBody(guestUrlSchema), createGuestShortUrl);
 
 // All URL-management routes are authenticated and owner-scoped.
 urlRoutes.post("/", authGuard, validateBody(urlAliasSchema), createShortUrl);

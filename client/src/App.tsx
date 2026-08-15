@@ -169,14 +169,150 @@ export function ThreeBackground() {
 }
 
 function App() {
-  const [url, setUrl] = useState(
-    "https://very-long-and-complex-url.com/analytics/dashboard"
-  );
+  const [url, setUrl] = useState("");
+  const [shortenedUrl, setShortenedUrl] = useState<{
+    original: string;
+    shortCode: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  // How many guest links are left. Seeded from localStorage for instant paint,
+  // then corrected from the server (authoritative) once the IP is known.
+  const [guestRemaining, setGuestRemaining] = useState(() => {
+    const stored = localStorage.getItem("guestUrlCount");
+    return stored ? parseInt(stored, 10) : 0;
+  });
 
   const [customAlias, setCustomAlias] = useState(false);
+  const [aliasValue, setAliasValue] = useState("");
   const [passwordProtection, setPasswordProtection] = useState(false);
 
   const navigate = useNavigate();
+
+  const [ip, setIp] = useState("");
+
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  useEffect(() => {
+    const getIpAndRemaining = async () => {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        setIp(data.ip);
+
+        // Server is the source of truth for the guest quota; overriding it
+        // keeps the counter correct across refresh / other browsers on the IP.
+        try {
+          const r = await fetch(
+            `${apiBase}/url/guest/remaining?ip=${encodeURIComponent(data.ip)}`
+          );
+          const j = await r.json();
+          if (Number.isFinite(j?.meta?.remaining)) {
+            setGuestRemaining(j.meta.remaining);
+            localStorage.setItem("guestUrlCount", String(j.meta.remaining));
+          }
+        } catch {
+          // Server unreachable; keep the localStorage fallback.
+        }
+      } catch {
+        // ipify unreachable — non-fatal, IP detection is best-effort.
+      }
+    };
+
+    getIpAndRemaining();
+  }, [apiBase]);
+
+
+
+  const GUEST_URL_LIMIT = 2;
+  const isLoggedIn = Boolean(localStorage.getItem("token"));
+
+  // Short links resolve through the backend's /url/:shortCode redirect route.
+  const shortUrlFor = (code: string) => `${apiBase}/url/${code}`;
+
+  const handleShorten = async () => {
+    if (!url.trim()) {
+      setError("Please enter a URL");
+      return;
+    }
+
+    // Check guest limit against the authoritative server-provided count.
+    if (!isLoggedIn && guestRemaining <= 0) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Guests use the public /url/guest endpoint (2 per IP per day);
+      // logged-in users use the authenticated /url endpoint.
+      const endpoint = isLoggedIn ? "/url" : "/url/guest";
+      const response = await fetch(
+        (import.meta.env.VITE_API_URL || "http://localhost:3000") + endpoint,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(isLoggedIn
+              ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            originalUrl: url,
+            ip: ip || undefined,
+            ...(isLoggedIn && customAlias && aliasValue
+              ? { alias: aliasValue }
+              : {}),
+          }),
+        }
+      );
+
+      const data = await response.json();
+        // console.log("data is", data)
+      if (!response.ok) {
+        // If the server enforces the guest limit (e.g. from another device/IP),
+        // surface the login prompt instead of a raw error.
+        if (!isLoggedIn && response.status === 403) {
+          setShowLoginModal(true);
+          return;
+        }
+        throw new Error(data.message || "Failed to shorten URL");
+      }
+
+      setShortenedUrl({
+        original: url,
+        shortCode: data.data.shortCode,
+      });
+
+      // Update guest count if not logged in. Prefer the server's authoritative
+      // `meta.remaining`; fall back to decrementing locally.
+      if (!isLoggedIn) {
+        const remaining = data.meta?.remaining;
+        const next = Number.isFinite(remaining)
+          ? remaining
+          : guestRemaining - 1;
+        setGuestRemaining(Math.max(0, next));
+        localStorage.setItem("guestUrlCount", String(Math.max(0, next)));
+      }
+
+      setUrl("");
+      setAliasValue("");
+      setCustomAlias(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to shorten URL");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (shortenedUrl) {
+      await navigator.clipboard.writeText(shortUrlFor(shortenedUrl.shortCode));
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-on-surface">
@@ -277,14 +413,37 @@ function App() {
                 />
               </div>
 
-              <button className="flex items-center justify-center gap-2 rounded-lg bg-primary-container px-8 py-4 font-bold text-on-primary-container transition-all hover:brightness-110">
-                <span>Shorten URL</span>
+              <button
+                onClick={handleShorten}
+                disabled={isLoading}
+                className="flex items-center justify-center gap-2 rounded-lg bg-primary-container px-8 py-4 font-bold text-on-primary-container transition-all hover:brightness-110 disabled:opacity-60"
+              >
+                <span>{isLoading ? "Shortening..." : "Shorten URL"}</span>
 
                 <Icon>bolt</Icon>
               </button>
             </div>
 
-            <div className="mt-4 flex items-center gap-4 px-4 pb-2">
+            {error && (
+              <div className="mt-3 rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-body-sm text-error">
+                {error}
+              </div>
+            )}
+
+            {customAlias && (
+              <div className="mt-4 flex items-center gap-2 px-4">
+                <Icon className="text-on-surface-variant">edit_note</Icon>
+                <input
+                  value={aliasValue}
+                  onChange={(e) => setAliasValue(e.target.value)}
+                  className="w-full rounded-lg border border-outline-variant/30 bg-background px-4 py-2 font-code text-white outline-none placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary/20"
+                  placeholder="custom-alias"
+                  type="text"
+                />
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center gap-4 px-4 pb-2">
               <label className="group flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
@@ -316,11 +475,20 @@ function App() {
                   Password Protection
                 </span>
               </label>
+
+              {!isLoggedIn && (
+                <span className="ml-auto flex items-center gap-1 text-body-sm text-on-surface-variant/60">
+                  <Icon className="text-[16px]">lock_open</Icon>
+                  {guestRemaining} free{" "}
+                  {guestRemaining === 1 ? "link" : "links"}{" "}
+                  left
+                </span>
+              )}
             </div>
           </div>
 
           {/* RESULT CARD */}
-
+          {shortenedUrl && (
           <div className="glass reveal-up delay-2 group relative mx-auto mt-12 max-w-2xl overflow-hidden rounded-xl border border-primary/20 p-6 transition-colors hover:border-primary/40">
             <div className="absolute right-0 top-0 p-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-tertiary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-tertiary">
@@ -333,7 +501,7 @@ function App() {
               <div className="hidden sm:block">
                 <div className="h-24 w-24 rounded-lg bg-white p-2">
                   <img
-                    src={qrCode}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shortUrlFor(shortenedUrl.shortCode))}`}
                     className="h-full w-full"
                     alt="SnapLink QR Code"
                   />
@@ -347,7 +515,7 @@ function App() {
                   </span>
 
                   <p className="truncate font-code text-white opacity-50">
-                    {url}
+                    {shortenedUrl.original}
                   </p>
                 </div>
 
@@ -358,12 +526,15 @@ function App() {
                     </span>
 
                     <p className="font-code text-2xl font-bold tracking-tight text-white">
-                      snap.link/dev-metrics
+                      {shortUrlFor(shortenedUrl.shortCode)}
                     </p>
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="rounded-lg border border-white/5 bg-surface-container-high p-2 transition-colors hover:bg-surface-container-highest">
+                    <button
+                      onClick={copyToClipboard}
+                      className="rounded-lg border border-white/5 bg-surface-container-high p-2 transition-colors hover:bg-surface-container-highest"
+                    >
                       <Icon className="text-primary">
                         content_copy
                       </Icon>
@@ -381,6 +552,57 @@ function App() {
               </div>
             </div>
           </div>
+          )}
+
+          {/* LOGIN MODAL */}
+          {showLoginModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+              <div className="mx-4 w-full max-w-md rounded-2xl border border-white/10 bg-surface p-8 shadow-2xl">
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
+                    <Icon className="text-3xl text-primary">lock</Icon>
+                  </div>
+                  <h3 className="mb-2 font-headline-md text-xl font-bold text-white">
+                    Free Limit Reached
+                  </h3>
+                  <p className="text-body-sm text-on-surface-variant">
+                    You've used your {GUEST_URL_LIMIT} free links. Sign up to create unlimited short URLs and access analytics.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLoginModal(false)}
+                    className="flex-1 rounded-lg border border-white/10 py-3 font-bold text-white transition-colors hover:bg-white/5"
+                  >
+                    Maybe Later
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLoginModal(false);
+                      navigate("/signup");
+                    }}
+                    className="flex-1 rounded-lg bg-primary-container py-3 font-bold text-on-primary-container transition-all hover:brightness-110"
+                  >
+                    Sign Up Free
+                  </button>
+                </div>
+
+                <p className="mt-4 text-center text-body-sm text-on-surface-variant">
+                  Already have an account?{" "}
+                  <button
+                    onClick={() => {
+                      setShowLoginModal(false);
+                      navigate("/login");
+                    }}
+                    className="text-primary hover:underline"
+                  >
+                    Log in
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 

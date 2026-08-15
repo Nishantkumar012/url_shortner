@@ -5,6 +5,7 @@ import { AppError } from "../../common/error";
 import { Prisma } from "@prisma/client";
 import ms, { type StringValue} from "ms"
 import {redis} from "../../core/redis"
+import type { Url } from "@prisma/client"
 
 
 // Creates a URL for the given owner. If `alias` is supplied it becomes the
@@ -16,7 +17,7 @@ export async function createUrl(
   userId: string,
   alias?: string,
   expiresAt?: string
-) {
+): Promise<Url> {
   let shortCode: string;
 
   if (alias) {
@@ -30,20 +31,18 @@ export async function createUrl(
   } else {
     shortCode = await generateUniqueShortCode();
   }
-    
-    const expires = expiresAt? new Date(Date.now() + ms(expiresAt as StringValue)):null;
-  try {
-     const url =await prisma.url.create({
-      data: { originalUrl, shortCode, userId ,expiresAt:expires},
-    }); 
 
-       await  redis.set(`url:${shortCode}`,JSON.stringify({
-          originalUrl,
-          expiresAt:expires,
-      }))
-          
-      // const red = await redis.get(`url:${shortCode}`)
-      // console.log("red is",red);
+  const expires = expiresAt ? new Date(Date.now() + ms(expiresAt as StringValue)) : null;
+
+  try {
+    const url = await prisma.url.create({
+      data: { originalUrl, shortCode, userId, expiresAt: expires },
+    });
+
+    await redis.set(`url/${shortCode}`, JSON.stringify({
+      originalUrl,
+      expiresAt: expires,
+    }));
 
     return url;
   } catch (err) {
@@ -125,4 +124,86 @@ export async function getAllUrl(userId: string) {
   console.log("correct urls", existing);
 
   return existing;
+}
+
+// Guest URL creation - creates temporary URLs without authentication
+// Uses IP-based rate limiting stored in Redis
+const GUEST_URL_LIMIT = 2; // Max 2 URLs per guest per 24 hours
+
+export async function createGuestUrl(
+  originalUrl: string,
+  clientIp: string
+): Promise<{ url: Url; remaining: number }> {
+  const guestKey = `guest:${clientIp}`;
+  const currentCount = parseInt((await redis.get(guestKey)) || "0", 10);
+
+  if (currentCount >= GUEST_URL_LIMIT) {
+    throw new AppError(403, "Guest limit reached. Please sign up to create more URLs.");
+  }
+
+  // Generate short code
+  const shortCode = await generateUniqueShortCode();
+
+  // Create a guest user ID based on IP (or use a system guest user)
+  // For simplicity, we'll create a deterministic guest user ID
+  const guestUserId = `guest-${clientIp.replace(/[:.]/g, "-")}`;
+
+  // Check if guest user exists, if not create one
+  let guestUser = await prisma.user.findUnique({
+    where: { id: guestUserId },
+  });
+
+  if (!guestUser) {
+    try {
+      guestUser = await prisma.user.create({
+        data: {
+          id: guestUserId,
+          email: `${guestUserId}@guest.local`,
+          passwordHash: "guest",
+          name: "Guest User",
+          isVerified: false,
+        },
+      });
+    } catch {
+      // User might already exist due to race condition
+      guestUser = await prisma.user.findUnique({
+        where: { id: guestUserId },
+      });
+    }
+  }
+
+  if (!guestUser) {
+    throw new AppError(500, "Failed to create guest user");
+  }
+
+  const url = await prisma.url.create({
+    data: {
+      originalUrl,
+      shortCode,
+      userId: guestUser.id,
+    },
+  });
+
+  // Increment guest count in Redis (24 hour expiry)
+  await redis.set(guestKey, (currentCount + 1).toString(), "EX", 86400);
+
+  // Cache the URL (key must match what redirectService reads)
+  await redis.set(
+    `url/${shortCode}`,
+    JSON.stringify({
+      originalUrl,
+      expiresAt: null,
+    })
+  );
+
+  return { url, remaining: GUEST_URL_LIMIT - currentCount - 1 };
+}
+
+// Returns how many guest URLs the given IP still has left. The client calls
+// this on load so the "free links left" counter is authoritative from the
+// server (and survives a refresh / different browser on the same IP), instead
+// of trusting per-browser localStorage.
+export async function getGuestRemaining(clientIp: string): Promise<number> {
+  const currentCount = parseInt((await redis.get(`guest:${clientIp}`)) || "0", 10);
+  return Math.max(0, GUEST_URL_LIMIT - currentCount);
 }

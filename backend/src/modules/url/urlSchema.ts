@@ -30,3 +30,11 @@ export const urlAliasSchema = z.object({
 export const urlUpdateSchema = z.object({
   originalUrl: z.url("Must be a valid URL"),
 });
+
+// Guest URL creation - no alias, no expiry (simple shortening).
+// `ip` lets the client share its fingerprint so rate-limiting is consistent
+// even behind a shared NAT/proxy.
+export const guestUrlSchema = z.object({
+  originalUrl: z.url("Must be a valid URL"),
+  ip: z.string().optional(),
+});
