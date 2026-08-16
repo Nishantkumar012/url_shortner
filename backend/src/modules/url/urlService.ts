@@ -128,14 +128,14 @@ export async function getAllUrl(userId: string) {
 
 // Guest URL creation - creates temporary URLs without authentication
 // Uses IP-based rate limiting stored in Redis
-const GUEST_URL_LIMIT = 2; // Max 2 URLs per guest per 24 hours
+const GUEST_URL_LIMIT = 10; // Max 2 URLs per guest per 24 hours
 
 export async function createGuestUrl(
   originalUrl: string,
   clientIp: string
 ): Promise<{ url: Url; remaining: number }> {
   const guestKey = `guest:${clientIp}`;
-  const currentCount = parseInt((await redis.get(guestKey)) || "0", 10);
+  const currentCount = parseInt((await redis.get(guestKey)) || "0", 10); // get string convert into decimal by using 10
 
   if (currentCount >= GUEST_URL_LIMIT) {
     throw new AppError(403, "Guest limit reached. Please sign up to create more URLs.");

@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { env} from "../config/env";
 import type { StringValue} from "ms";
 import argon2 from "argon2";
+import { AppError } from "../common/error";
 
 
 export function signAccessToken(userId:string):string{
@@ -43,7 +44,18 @@ export function verifyEmailVerificationToken(token: string): string {
 
 export function verifyAccessToken(token: string): {sub: string}{
      
-     return jwt.verify(token,env.JWT_ACCESS_SECRET) as { sub: string}
+try {
+    return jwt.verify(
+      token,
+      env.JWT_ACCESS_SECRET
+    ) as { sub: string };
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new AppError(401, "jwt expired");
+    }
+
+    throw new AppError(401, "Invalid token");
+  }
 }
 
 export async  function hashToken(token:string):Promise<string>{

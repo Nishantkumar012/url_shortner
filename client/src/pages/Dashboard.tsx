@@ -124,6 +124,8 @@ export default function Dashboard() {
         status: url.status || "Active",
         isDeleted:url.isDeleted
       }));
+
+           console.log("the url is",response);
       setLinks(userLinks);
     } catch (error) {
       console.error("Failed to fetch URLs:", error);
@@ -137,6 +139,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetchUserUrls();
   }, []);
+
+
 
   const filteredLinks = useMemo(() => {
     const value = search.trim().toLowerCase();

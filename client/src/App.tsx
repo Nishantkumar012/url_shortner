@@ -225,7 +225,7 @@ function App() {
 
 
 
-  const GUEST_URL_LIMIT = 2;
+  const GUEST_URL_LIMIT = 10;
   const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   // Short links resolve through the backend's /url/:shortCode redirect route.
@@ -282,6 +282,9 @@ function App() {
         throw new Error(data.message || "Failed to shorten URL");
       }
 
+        // console.log(data);
+        console.log("short coded",data.data.shortCode);
+
       setShortenedUrl({
         original: url,
         shortCode: data.data.shortCode,
@@ -314,6 +317,7 @@ function App() {
     }
   };
 
+  
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-on-surface">
       {/* NAVBAR */} 
@@ -525,8 +529,16 @@ function App() {
                       SnapLink
                     </span>
 
-                    <p className="font-code text-2xl font-bold tracking-tight text-white">
-                      {shortUrlFor(shortenedUrl.shortCode)}
+                    <p className="font-code text-2xl font-bold tracking-tight text-white"
+                          onClick={() => {
+                                // Extract shortCode from shortUrl (e.g., "snap.link/abc123" → "abc123")
+                                 window.open(
+                                  `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/url/${shortenedUrl.shortCode}`,
+                                  "_blank")
+                              }}
+                    >
+                      {/* {shortUrlFor(shortenedUrl.shortCode)} */}
+                        {shortenedUrl.shortCode}
                     </p>
                   </div>
 

@@ -19,7 +19,11 @@ export async function redirectController(
       req.headers["user-agent"],
       req.headers.referer
     );
-    return res.redirect(301, originalUrl);
+    // 302 (Found), NOT 301: a 301 is permanently cached by the browser, so
+    // repeat clicks would bypass the backend entirely and no analytics /
+    // clickCount would be recorded. A 302 keeps every click flowing through
+    // the redirect handler where analytics is enqueued.
+    return res.redirect(302, originalUrl);
   } catch (err) {
     next(err);
   }
