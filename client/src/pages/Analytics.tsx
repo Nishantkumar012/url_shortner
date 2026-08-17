@@ -16,6 +16,8 @@ import {
 import { ThreeBackground } from "../App";
 import axiosinstance from "../utils/axiosInstance";
 import { useSearchParams } from "react-router";
+import {  useNavigate } from "react-router";
+
 
 const PROFILE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBcYmJZF_M66dOjAkShFEruJ1vFQKOjZtYM2H0otAH3GkAWjezBokOSZLKVvAWXR4PkZJR-YkVviCJCZAQRUhgDzQRo4omO8MrXIzC_2Cff-lfXlVcLI7_2EyseIrf5Qm_1nme6b2aq9isimeRxPlaKWlfBeN806cWyi17MwvO3cDgFvmd7T87ZGa4WJr_jECYCGshwkZ9dNC1Ri29uh-ByRG2sQX8I7cO5C5YK9EhXF41N2iTLy01Y";
@@ -65,6 +67,8 @@ export default function Analytics() {
 
   // Deep-linking support: /analy?shortCode=xyz preselects that link.
   const requestedShortCode = searchParams.get("shortCode");
+
+  const navigate = useNavigate();
 
   const [selected, setSelected] = useState<string>(requestedShortCode ?? "all");
 
@@ -241,7 +245,10 @@ export default function Analytics() {
               SnapLink
             </a>
 
-            <div className="hidden md:flex">
+            <div className="hidden md:flex"
+                onClick={()=> navigate("/dash")}
+              
+            >
               <a
                 href="/dashboard"
                 className="flex items-center gap-2 font-body-md text-on-surface-variant transition-all duration-200 hover:scale-105 hover:text-primary"
