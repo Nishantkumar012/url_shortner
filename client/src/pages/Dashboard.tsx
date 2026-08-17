@@ -571,6 +571,7 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
                 icon={<ChartNoAxesCombined size={21} />}
                 label="Analytics"
                 inner
+                onClick={() => navigate("/analy")}
               />
 
               <SidebarItem
@@ -884,16 +885,19 @@ function SidebarItem({
   label,
   active = false,
   inner = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
   inner?: boolean;
+  onClick?: () => void;
 }) {
   if (inner) {
     return (
       <a
         href="#"
+        onClick={(e) => { e.preventDefault(); onClick?.(); }}
         className="
           group -mx-3 flex items-center gap-3 rounded-lg px-3 py-3
           font-body-md text-on-surface-variant
