@@ -269,9 +269,9 @@ function App() {
           }),
         }
       );
-
+        console.log("endpoint used", endpoint);
       const data = await response.json();
-        // console.log("data is", data)
+        console.log("data is", data)
       if (!response.ok) {
         // If the server enforces the guest limit (e.g. from another device/IP),
         // surface the login prompt instead of a raw error.

@@ -77,7 +77,8 @@ export async function getAllShortUrl(req:Request,res:Response){
 // Guest URL creation - no auth required, IP-based rate limiting
 export async function createGuestShortUrl(req: Request, res: Response) {
   const { originalUrl, ip } = req.body as { originalUrl: string; ip?: string };
-
+       
+  console.log("using guest urls");
   // Prefer the explicitly-provided IP (from the client fingerprint), then fall
   // back to proxy-forwarded / socket address. Used to rate-limit guests.
   const clientIp =

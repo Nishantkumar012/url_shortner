@@ -126,78 +126,77 @@ export async function getAllUrl(userId: string) {
   return existing;
 }
 
+
+
+
+
 // Guest URL creation - creates temporary URLs without authentication
 // Uses IP-based rate limiting stored in Redis
-const GUEST_URL_LIMIT = 10; // Max 2 URLs per guest per 24 hours
+const GUEST_URL_LIMIT = 2;
+const GUEST_URL_TTL = 24 * 60 * 60; // 24 hours
 
 export async function createGuestUrl(
   originalUrl: string,
   clientIp: string
 ): Promise<{ url: Url; remaining: number }> {
   const guestKey = `guest:${clientIp}`;
-  const currentCount = parseInt((await redis.get(guestKey)) || "0", 10); // get string convert into decimal by using 10
 
-  if (currentCount >= GUEST_URL_LIMIT) {
-    throw new AppError(403, "Guest limit reached. Please sign up to create more URLs.");
+  // Atomically increment the guest request count
+  const currentCount = await redis.incr(guestKey);
+
+  // Set expiry only when the key is created
+  if (currentCount === 1) {
+    await redis.expire(guestKey, GUEST_URL_TTL);
   }
 
-  // Generate short code
+  // Guest limit reached
+  if (currentCount > GUEST_URL_LIMIT) {
+    // Roll back the increment because this request is rejected
+    await redis.decr(guestKey);
+
+    throw new AppError(
+      403,
+      "Guest limit reached. Please sign up to create more URLs."
+    );
+  }
+
+  // Generate unique short code
   const shortCode = await generateUniqueShortCode();
 
-  // Create a guest user ID based on IP (or use a system guest user)
-  // For simplicity, we'll create a deterministic guest user ID
-  const guestUserId = `guest-${clientIp.replace(/[:.]/g, "-")}`;
+  try {
+    // Create guest URL
+    const url = await prisma.url.create({
+      data: {
+        originalUrl,
+        shortCode,
+        userId: null,
+      },
+    });
 
-  // Check if guest user exists, if not create one
-  let guestUser = await prisma.user.findUnique({
-    where: { id: guestUserId },
-  });
+    // Cache URL for fast redirects
+    await redis.set(
+      `url/${shortCode}`,
+      JSON.stringify({
+        originalUrl,
+        expiresAt: null,
+      })
+    );
 
-  if (!guestUser) {
-    try {
-      guestUser = await prisma.user.create({
-        data: {
-          id: guestUserId,
-          email: `${guestUserId}@guest.local`,
-          passwordHash: "guest",
-          name: "Guest User",
-          isVerified: false,
-        },
-      });
-    } catch {
-      // User might already exist due to race condition
-      guestUser = await prisma.user.findUnique({
-        where: { id: guestUserId },
-      });
-    }
+    return {
+      url,
+      remaining: GUEST_URL_LIMIT - currentCount,
+    };
+  } catch (error) {
+    // DB failed, so give the guest their attempt back
+    await redis.decr(guestKey);
+
+    throw error;
   }
-
-  if (!guestUser) {
-    throw new AppError(500, "Failed to create guest user");
-  }
-
-  const url = await prisma.url.create({
-    data: {
-      originalUrl,
-      shortCode,
-      userId: guestUser.id,
-    },
-  });
-
-  // Increment guest count in Redis (24 hour expiry)
-  await redis.set(guestKey, (currentCount + 1).toString(), "EX", 86400);
-
-  // Cache the URL (key must match what redirectService reads)
-  await redis.set(
-    `url/${shortCode}`,
-    JSON.stringify({
-      originalUrl,
-      expiresAt: null,
-    })
-  );
-
-  return { url, remaining: GUEST_URL_LIMIT - currentCount - 1 };
 }
+
+
+
+
 
 // Returns how many guest URLs the given IP still has left. The client calls
 // this on load so the "free links left" counter is authoritative from the
