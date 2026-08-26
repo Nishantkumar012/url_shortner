@@ -194,6 +194,8 @@ function App() {
 
   const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+  console.log("api si back", apiBase);
+
   useEffect(() => {
     const getIpAndRemaining = async () => {
       try {
