@@ -2,7 +2,7 @@ import {Redis} from "ioredis";
 import {env} from "../config/env";
 import { logger} from "./logger";
 
-
+console.log("redis url in redis.ts", env.REDIS_URL);
 // maxRetriesPerRequest: null is REQUIRED so BullMQ can reuse this connection
 // for its blocking worker commands later.
 export const redis = new Redis(env.REDIS_URL, {
