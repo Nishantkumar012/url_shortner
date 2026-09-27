@@ -53,7 +53,8 @@ export async function registerUser(input: RegisterInput) {
     data: {
       name: input.name,
       email: input.email,
-      passwordHash,
+      passwordHash
+    
     },
     select: {
       id: true,
