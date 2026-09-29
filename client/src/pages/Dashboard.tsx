@@ -42,7 +42,16 @@ type LinkItem = {
   clicks: string;
   status: LinkStatus;
   isDeleted:boolean
-  
+
+};
+
+type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isVerified: boolean;
+  createdAt: string;
 };
 
 const initialLinks: LinkItem[] = [
@@ -86,6 +95,8 @@ export default function Dashboard() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -102,6 +113,28 @@ export default function Dashboard() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate()
+
+  // Fetch current user's profile
+  const fetchUserProfile = async () => {
+    try {
+      setUserLoading(true);
+      const response = await axiosinstance.get("/auth/me");
+      setUserProfile(response.data?.user || null);
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      // Fallback to localStorage user data if available
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          setUserProfile(JSON.parse(storedUser));
+        } catch {
+          setUserProfile(null);
+        }
+      }
+    } finally {
+      setUserLoading(false);
+    }
+  };
 
   // Fetch current user's URLs from backend
   const fetchUserUrls = async () => {
@@ -138,6 +171,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchUserUrls();
+    fetchUserProfile();
   }, []);
 
 
@@ -588,18 +622,18 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
               <div className="h-10 w-10 overflow-hidden rounded-full border border-primary/30 p-0.5">
                 <img
                   src={PROFILE}
-                  alt="Alex Rivera"
+                  alt={userProfile?.name || "User"}
                   className="h-full w-full rounded-full object-cover"
                 />
               </div>
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-body-sm font-bold">
-                  Alex Rivera
+                  {userLoading ? "Loading..." : userProfile?.name || "User"}
                 </p>
 
                 <p className="truncate text-xs text-on-surface-variant">
-                  Pro Plan
+                  {userLoading ? "..." : userProfile?.email || "No email"}
                 </p>
               </div>
 

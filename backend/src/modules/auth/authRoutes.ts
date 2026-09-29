@@ -1,6 +1,6 @@
 
 import Router from "express";
-import { login, register, logout, refresh } from "./authController";
+import { login, register, logout, refresh, getMe } from "./authController";
 import { authGuard } from "../../middlewares/authGuard";
 
 
@@ -16,6 +16,9 @@ authRoutes.post("/logout", authGuard, logout);
 
 // Get new access token using refresh token from httpOnly cookie
 authRoutes.post("/refresh", refresh);
+
+// Get current authenticated user's profile
+authRoutes.get("/me", authGuard, getMe);
 
 
 

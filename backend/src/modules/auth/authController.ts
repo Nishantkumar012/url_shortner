@@ -4,6 +4,7 @@ import { loginUser, registerUser, logOut, refreshAccessToken } from "./authServi
 import { loginSchema, registerSchema } from "./authSchema";
 import { env } from "../../config/env";
 import { AppError } from "../../common/error";
+import { prisma } from "../../utils/prisma";
 
 type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -87,4 +88,26 @@ export async function refresh(req: Request, res: Response) {
   const { accessToken } = await refreshAccessToken(refreshToken);
 
   res.status(200).json({ status: "success", data: { accessToken } });
+}
+
+export async function getMe(req: Request, res: Response) {
+  const userId = req.userId as string;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  res.status(200).json({ status: "success", data: { user } });
 }

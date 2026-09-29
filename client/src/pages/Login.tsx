@@ -42,9 +42,12 @@ export default function Login() {
 
       console.log("Login response:", response.data);
 
-      // Store token in localStorage
+      // Store token and user data in localStorage
       if (response.data?.accessToken) {
         localStorage.setItem("token", response.data.accessToken);
+      }
+      if (response.data?.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
       }
 
       setStatus("success");
