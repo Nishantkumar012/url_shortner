@@ -22,10 +22,10 @@ export async function createUrl(
 
   if (alias) {
     if (isReservedWord(alias)) {
-      throw new AppError(400, "This alias is reserved");
+      throw new AppError(400, `"${alias}" is a reserved alias and cannot be used.`);
     }
     if (!(await isAvailable(alias))) {
-      throw new AppError(409, "This alias is already taken");
+      throw new AppError(409, `The alias "${alias}" is already in use.`);
     }
     shortCode = alias;
   } else {

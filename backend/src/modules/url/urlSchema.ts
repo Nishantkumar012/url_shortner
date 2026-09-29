@@ -8,6 +8,7 @@ export const urlSchema = z.object({
 // Create payload with an OPTIONAL custom alias. The alias becomes the short
 // code; reserved-word and uniqueness checks happen in the service. Validation
 // here only enforces shape — semantic rules (reserved/unique) live in the service.
+// Aliases are normalized to lowercase before being checked/stored.
 export const urlAliasSchema = z.object({
   originalUrl: z.url("Must be a valid URL"),
   alias: z
@@ -18,12 +19,13 @@ export const urlAliasSchema = z.object({
       /^[a-zA-Z0-9_-]+$/,
       "Alias may only contain letters, numbers, - and _"
     )
+    .transform(val => val.toLowerCase())  // Normalize to lowercase
     .optional(),
     expiresAt: z
     .string()
     .regex(/^\d+(m|h|d)$/, "Use format like 30m,2h,15d")
     .optional(),
-    
+
 });
 
 // Update payload: only the new destination URL.

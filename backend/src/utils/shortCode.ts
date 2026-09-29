@@ -19,11 +19,15 @@ export const generateShortCode = (length: number = DEFAULT_LENGTH): string => {
 };
 
 /**
- * Checks whether a short code is free to use (not already in the DB).
+ * Checks whether a short code is free to use (not already in use by an active URL).
+ * Soft-deleted URLs do not reserve their shortCode, allowing reuse.
  */
 export async function isAvailable(shortCode: string): Promise<boolean> {
-  const existing = await prisma.url.findUnique({
-    where: { shortCode },
+  const existing = await prisma.url.findFirst({
+    where: {
+      shortCode,
+      isDeleted: false  // Only check active URLs; soft-deleted ones don't reserve the code
+    },
     select: { id: true },
   });
   return existing === null;
