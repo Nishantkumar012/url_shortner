@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { adminLogin, getStats, getAllUsers, getAllUrls } from "./adminService";
+import { adminLogin, getStats, getAllUsers, getAllUrls, getUserById, getUserUrls } from "./adminService";
 import { AppError } from "../../common/error";
 
 // No try/catch on purpose: errors bubble to the global errorHandler,
@@ -32,5 +32,27 @@ export async function users(_req: Request, res: Response) {
 
 export async function urls(_req: Request, res: Response) {
   const data = await getAllUrls();
+  res.status(200).json({ status: "success", data });
+}
+
+export async function userDetail(req: Request, res: Response) {
+  const { userId } = req.params;
+
+  if (!userId || typeof userId !== "string") {
+    throw new AppError(400, "userId is required");
+  }
+
+  const data = await getUserById(userId);
+  res.status(200).json({ status: "success", data });
+}
+
+export async function userUrls(req: Request, res: Response) {
+  const { userId } = req.params;
+
+  if (!userId || typeof userId !== "string") {
+    throw new AppError(400, "userId is required");
+  }
+
+  const data = await getUserUrls(userId);
   res.status(200).json({ status: "success", data });
 }

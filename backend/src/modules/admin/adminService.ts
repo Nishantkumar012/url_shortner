@@ -159,3 +159,49 @@ export async function getAllUrls() {
     },
   });
 }
+
+export async function getUserById(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  return user;
+}
+
+export async function getUserUrls(userId: string) {
+  // First verify user exists
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  // Fetch all URLs for this specific user
+  return prisma.url.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      shortCode: true,
+      originalUrl: true,
+      clickCount: true,
+      createdAt: true,
+      isDeleted: true,
+    },
+  });
+}

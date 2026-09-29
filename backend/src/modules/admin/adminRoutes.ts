@@ -11,3 +11,5 @@ adminRoutes.post("/login", ctrl.login);
 adminRoutes.get("/stats", adminAuthGuard, ctrl.stats);
 adminRoutes.get("/users", adminAuthGuard, ctrl.users);
 adminRoutes.get("/urls", adminAuthGuard, ctrl.urls);
+adminRoutes.get("/users/:userId", adminAuthGuard, ctrl.userDetail);
+adminRoutes.get("/users/:userId/urls", adminAuthGuard, ctrl.userUrls);

@@ -355,6 +355,8 @@ export default function AdminDashboard() {
 /* ── Users table ──────────────────────────────────────────────────────────── */
 
 function UsersTable({ users }: { users: AdminUser[] }) {
+  const navigate = useNavigate();
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left">
@@ -373,7 +375,8 @@ function UsersTable({ users }: { users: AdminUser[] }) {
           {users.map((user) => (
             <tr
               key={user.id}
-              className="transition-colors hover:bg-white/5"
+              onClick={() => navigate(`/admin/users/${user.id}`)}
+              className="cursor-pointer transition-colors hover:bg-white/5"
             >
               <td className="px-6 py-4">
                 <div className="flex flex-col gap-0.5">
@@ -428,6 +431,8 @@ function UsersTable({ users }: { users: AdminUser[] }) {
 /* ── Links table ──────────────────────────────────────────────────────────── */
 
 function LinksTable({ urls }: { urls: AdminUrl[] }) {
+  const navigate = useNavigate();
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left">
@@ -437,71 +442,152 @@ function LinksTable({ urls }: { urls: AdminUrl[] }) {
             <TableHeading>Destination</TableHeading>
             <TableHeading>Owner</TableHeading>
             <TableHeading className="text-right">Clicks</TableHeading>
+            <TableHeading className="text-center">Click %</TableHeading>
             <TableHeading>Created</TableHeading>
+            <TableHeading className="text-right">Actions</TableHeading>
           </tr>
         </thead>
 
         <tbody className="divide-y divide-white/5">
-          {urls.map((url) => (
-            <tr
-              key={url.id}
-              className="group transition-colors hover:bg-white/5"
-            >
-              <td className="px-6 py-4">
-                <button
-                  onClick={() =>
-                    window.open(
-                      `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/url/${url.shortCode}`,
-                      "_blank",
-                    )
-                  }
-                  className="flex items-center gap-1.5 font-code font-bold text-primary transition-colors hover:underline"
-                  title="Open short URL"
-                >
-                  {url.shortCode}
+          {urls.map((url, index) => {
+            const totalClicks = urls.reduce((sum, u) => sum + u.clickCount, 0);
+            const clickPercentage =
+              totalClicks > 0 ? ((url.clickCount / totalClicks) * 100).toFixed(1) : "0";
 
-                  <ExternalLink
-                    size={14}
-                    className="opacity-0 transition-opacity group-hover:opacity-100"
-                  />
-                </button>
-              </td>
+            return (
+              <tr
+                key={url.id}
+                className="group transition-colors hover:bg-white/5"
+              >
+                <td className="px-6 py-4">
+                  <button
+                    onClick={() =>
+                      window.open(
+                        `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/url/${url.shortCode}`,
+                        "_blank",
+                      )
+                    }
+                    className="flex items-center gap-1.5 font-code font-bold text-primary transition-colors hover:underline"
+                    title="Open short URL"
+                  >
+                    {url.shortCode}
 
-              <td className="px-6 py-4">
-                <span
-                  className="block max-w-xs truncate text-body-sm text-on-surface-variant"
-                  title={url.originalUrl}
-                >
-                  {url.originalUrl}
-                </span>
-              </td>
+                    <ExternalLink
+                      size={14}
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
+                    />
+                  </button>
+                </td>
 
-              <td className="px-6 py-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-body-sm font-bold">
-                    {url.user.name || "—"}
+                <td className="px-6 py-4">
+                  <span
+                    className="block max-w-xs truncate text-body-sm text-on-surface-variant"
+                    title={url.originalUrl}
+                  >
+                    {url.originalUrl}
                   </span>
+                </td>
 
-                  <span className="text-body-sm text-on-surface-variant">
-                    {url.user.email}
+                <td className="px-6 py-4">
+                  {url.user ? (
+                    <button
+                      onClick={() => navigate(`/admin/users/${url.user.id}`)}
+                      className="flex flex-col gap-0.5 rounded-lg px-2 py-1 transition-colors hover:bg-primary/10"
+                    >
+                      <span className="text-body-sm font-bold hover:text-primary">
+                        {url.user.name || "—"}
+                      </span>
+
+                      <span className="text-body-sm text-on-surface-variant">
+                        {url.user.email}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-body-sm font-bold text-on-surface-variant/50">
+                        —
+                      </span>
+
+                      <span className="text-xs text-on-surface-variant/40">
+                        User deleted
+                      </span>
+                    </div>
+                  )}
+                </td>
+
+                <td className="whitespace-nowrap px-6 py-4 text-right font-code text-body-sm">
+                  <span className="rounded-full bg-primary/20 px-3 py-1 text-primary">
+                    {url.clickCount.toLocaleString()}
                   </span>
-                </div>
-              </td>
+                </td>
 
-              <td className="whitespace-nowrap px-6 py-4 text-right font-code text-body-sm">
-                {url.clickCount.toLocaleString()}
-              </td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex items-center justify-center">
+                    <div className="w-full max-w-15">
+                      <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full bg-linear-to-r from-primary to-tertiary transition-all"
+                          style={{ width: `${clickPercentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-on-surface-variant/60">
+                        {clickPercentage}%
+                      </span>
+                    </div>
+                  </div>
+                </td>
 
-              <td className="whitespace-nowrap px-6 py-4 text-body-sm text-on-surface-variant">
-                {formatDate(url.createdAt)}
-              </td>
-            </tr>
-          ))}
+                <td className="whitespace-nowrap px-6 py-4 text-body-sm text-on-surface-variant">
+                  {formatDate(url.createdAt)}
+                </td>
+
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/url/${url.shortCode}`,
+                          "_blank",
+                        )
+                      }
+                      className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-primary"
+                      title="Open URL"
+                    >
+                      <ExternalLink size={18} />
+                    </button>
+
+                    <button
+                      onClick={() => url.user && navigate(`/admin/users/${url.user.id}`)}
+                      disabled={!url.user}
+                      className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                      title={url.user ? "View user details" : "User not available"}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        person
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(url.shortCode);
+                      }}
+                      className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-tertiary"
+                      title="Copy short code"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        content_copy
+                      </span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
 
           {urls.length === 0 && (
             <tr>
               <td
-                colSpan={5}
+                colSpan={7}
                 className="px-6 py-16 text-center text-body-sm text-on-surface-variant"
               >
                 No links found.

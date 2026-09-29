@@ -13,6 +13,7 @@ import { RouterProvider } from "react-router/dom";
 import Analytics from './pages/Analytics.tsx'
 import AdminLogin from './pages/AdminLogin.tsx'
 import AdminDashboard from './pages/AdminDashboard.tsx'
+import AdminUserDetails from './pages/AdminUserDetails.tsx'
 import AdminRoute from './components/AdminRoute.tsx'
 
 const router = createBrowserRouter([
@@ -55,6 +56,14 @@ const router = createBrowserRouter([
     element: (
       <AdminRoute>
         <AdminDashboard/>
+      </AdminRoute>
+    )
+  },
+  {
+    path: "/admin/users/:userId",
+    element: (
+      <AdminRoute>
+        <AdminUserDetails/>
       </AdminRoute>
     )
   }
