@@ -10,7 +10,7 @@ const LOGO =
 type SubmitStatus = "idle" | "loading" | "success";
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<SubmitStatus>("idle");
@@ -34,7 +34,7 @@ export default function AdminLogin() {
       // Response interceptor unwraps .data, so `response` here is the body
       // { status, data: { token } } — read one level, not two.
       const response: any = await axiosinstance.post("/admin/login", {
-        username,
+        email,
         password,
       });
 
@@ -99,29 +99,29 @@ export default function AdminLogin() {
               </div>
             )}
 
-            {/* Username */}
+            {/* Email */}
             <div className="space-y-stack-sm transition-transform duration-200 focus-within:scale-[1.01]">
               <label
-                htmlFor="admin-username"
+                htmlFor="admin-email"
                 className="ml-1 font-label-md text-label-md text-on-surface-variant"
               >
-                Username
+                Email
               </label>
 
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                  person
+                  mail
                 </span>
 
                 <input
-                  id="admin-username"
-                  name="username"
-                  type="text"
-                  placeholder="admin"
+                  id="admin-email"
+                  name="email"
+                  type="email"
+                  placeholder="admin@example.com"
                   required
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-outline-variant bg-[#09090B] py-3 pl-10 pr-4 text-on-surface outline-none transition-all placeholder:text-outline focus:border-primary-container focus:ring-2 focus:ring-primary-container/20"
                 />
               </div>

@@ -5,17 +5,17 @@ import { AppError } from "../../common/error";
 // No try/catch on purpose: errors bubble to the global errorHandler,
 // which maps AppError -> proper status (see errorHandler.ts).
 
-export function login(req: Request, res: Response) {
+export async function login(req: Request, res: Response) {
   // Client IP for rate limiting. Behind a proxy you'd read X-Forwarded-For;
   // for a direct connection req.ip is fine.
   const clientIp = req.ip || "unknown";
-  const { username, password } = req.body ?? {};
+  const { email, password } = req.body ?? {};
 
-  if (typeof username !== "string" || typeof password !== "string") {
-    throw new AppError(400, "username and password are required");
+  if (typeof email !== "string" || typeof password !== "string") {
+    throw new AppError(400, "email and password are required");
   }
 
-  const { token } = adminLogin(username, password, clientIp);
+  const { token } = await adminLogin(email, password, clientIp);
 
   res.status(200).json({ status: "success", data: { token } });
 }

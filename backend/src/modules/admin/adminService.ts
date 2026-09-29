@@ -2,6 +2,7 @@ import { prisma } from "../../utils/prisma";
 import { env } from "../../config/env";
 import { signAdminToken } from "../../utils/adminToken";
 import { AppError } from "../../common/error";
+import { verifyPassword } from "../../utils/password";
 import crypto from "crypto";
 
 // ── Brute-force protection (in-memory) ──────────────────────────────────────
@@ -39,26 +40,9 @@ function clearFailedAttempts(ip: string): void {
   failedAttempts.delete(ip);
 }
 
-// ── Timing-safe credential compare ──────────────────────────────────────────
-function safeCompare(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, "utf8");
-  const bufB = Buffer.from(b, "utf8");
-
-  if (bufA.length !== bufB.length) {
-    // Run the comparison anyway to keep timing consistent.
-    crypto.timingSafeEqual(
-      Buffer.alloc(bufA.length),
-      bufB,
-    );
-    return false;
-  }
-
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
 // ── Admin login ─────────────────────────────────────────────────────────────
-export function adminLogin(
-  username: string | undefined,
+export async function adminLogin(
+  email: string | undefined,
   password: string | undefined,
   clientIp: string,
 ) {
@@ -69,19 +53,44 @@ export function adminLogin(
     );
   }
 
-  if (
-    !username ||
-    !password ||
-    !safeCompare(username, env.ADMIN_USERNAME) ||
-    !safeCompare(password, env.ADMIN_PASSWORD)
-  ) {
+  if (!email || !password || typeof email !== "string" || typeof password !== "string") {
     recordFailedAttempt(clientIp);
-    throw new AppError(401, "Invalid admin credentials");
+    throw new AppError(401, "Invalid credentials");
+  }
+
+  // Fetch user from database by email
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      passwordHash: true,
+      role: true,
+    },
+  });
+
+  // User doesn't exist or password is wrong
+  if (!user) {
+    recordFailedAttempt(clientIp);
+    throw new AppError(401, "Invalid credentials");
+  }
+
+  // Verify password
+  const isPasswordCorrect = await verifyPassword(password, user.passwordHash);
+  if (!isPasswordCorrect) {
+    recordFailedAttempt(clientIp);
+    throw new AppError(401, "Invalid credentials");
+  }
+
+  // Check if user has ADMIN role
+  if (user.role !== "ADMIN") {
+    recordFailedAttempt(clientIp);
+    throw new AppError(403, "Admin access required");
   }
 
   clearFailedAttempts(clientIp);
 
-  const token = signAdminToken();
+  // Generate admin token with userId included
+  const token = signAdminToken(user.id);
 
   return { token };
 }
