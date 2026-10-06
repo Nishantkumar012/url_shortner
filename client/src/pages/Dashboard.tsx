@@ -324,7 +324,7 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
       setShowCreateModal(false);
       setCreateForm({ originalUrl: "", alias: "", expiresAt: "" });
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create URL");
+      setError(err?.message || "Failed to create URL");
     } finally {
       setCreating(false);
     }
