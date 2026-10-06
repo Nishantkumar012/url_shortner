@@ -2,3 +2,4 @@
 
 /learnings/
 *.md
+!README.md
