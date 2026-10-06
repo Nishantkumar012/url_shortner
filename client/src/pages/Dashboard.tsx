@@ -22,9 +22,11 @@ import {
   ChevronRight,
   Check,
   X,
+  QrCode,
 } from "lucide-react";
 import { ThreeBackground } from "../App";
 import {  useNavigate } from "react-router";
+import { QRCodeModal } from "../components/QRCodeModal";
 
 const LOGO =
  "https://lh3.googleusercontent.com/aida-public/AB6AXuBgdTWjBxgLljLj0OL4xEvxNE5sUvv3veDbVYoyqiYOxLU54PKranBW0u0G1XEs-EbRzsEXq2Em-e-iYdUaPRPF8UMHKnZ3hLHIpk7uBP8Xy1W5A0K7GcNbJ4sABhViIb1vkZsh7YZRwXloCpkQUG7hYVv85N2VkX--BcqVP3UGil_qk91sJ8OwX6auzgHq8FTq0fZVShQLBc6U5IwqM3CTq_PFoBdTX1WFMSJX-pGXTl0XDtVioHyO";
@@ -111,6 +113,7 @@ export default function Dashboard() {
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [selectedQrLink, setSelectedQrLink] = useState<LinkItem | null>(null);
 
   const navigate = useNavigate()
 
@@ -340,6 +343,16 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
 
         <div className="absolute -bottom-52 right-0 h-[600px] w-[600px] rounded-full bg-primary/5 blur-[150px]" />
       </div>
+
+      {/* QR Code Modal */}
+      {selectedQrLink && (
+        <QRCodeModal
+          isOpen={!!selectedQrLink}
+          onClose={() => setSelectedQrLink(null)}
+          shortUrl={selectedQrLink.shortUrl}
+          destinationUrl={selectedQrLink.destination}
+        />
+      )}
 
       {/* Create URL Modal */}
       {showCreateModal && (
@@ -807,6 +820,15 @@ const shortUrl = `${import.meta.env.VITE_API_URL}/url/${link.shortUrl}`;
                               ) : (
                                 <Copy size={20} />
                               )}
+                            </button>
+
+                            {/* QR Code */}
+                            <button
+                              onClick={() => setSelectedQrLink(link)}
+                              className="rounded-lg p-2 text-on-surface-variant transition-all hover:bg-white/10 hover:text-on-surface"
+                              title="QR Code"
+                            >
+                              <QrCode size={20} />
                             </button>
 
                             {/* Analytics */}
