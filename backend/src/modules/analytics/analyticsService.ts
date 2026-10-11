@@ -6,12 +6,14 @@ type Breakdown = Record<string, number>;
 
 export interface AnalyticsSummary {
   total: number;
+  uniqueVisitors: number;
   totalUrls?: number;
   timeline: Record<string, number>;
   devices: Breakdown;
   browsers: Breakdown;
   oses: Breakdown;
   referrers: Breakdown;
+  countries: Breakdown;
   recent: RecentClick[];
 }
 
@@ -20,10 +22,10 @@ interface RecentClick {
   browser: string;
   device: string;
   referrer: string;
+  country: string;
 }
 
-// Group by UTC calendar day — consistent with the worker storing clickedAt
-// as an ISO string (UTC).
+// Group by UTC calendar day — consistent with the worker storing clickedAt as ISO string
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -42,18 +44,31 @@ function hostnameOf(referer: string | null): string {
 // Turns raw analytics rows into the shape the client renders. UA parsing
 // happens once here so the API returns counts, not raw user-agent strings.
 function aggregate(
-  rows: { createdAt: Date; userAgent: string | null; referer: string | null }[]
-): Omit<AnalyticsSummary, "total" | "totalUrls"> {
+  rows: {
+    createdAt: Date;
+    userAgent: string | null;
+    referer: string | null;
+    visitorToken: string | null;
+    country: string | null;
+  }[]
+): Omit<AnalyticsSummary, "total" | "totalUrls" | "uniqueVisitors"> {
   const timeline: Record<string, number> = {};
   const devices: Record<string, number> = {};
   const browsers: Record<string, number> = {};
   const oses: Record<string, number> = {};
   const referrers: Record<string, number> = {};
+  const countries: Record<string, number> = {};
   const recent: RecentClick[] = [];
+  const uniqueVisitorTokens = new Set<string>();
 
   for (const row of rows) {
     const day = dayKey(row.createdAt);
     timeline[day] = (timeline[day] ?? 0) + 1;
+
+    // Track unique visitors by hashed token
+    if (row.visitorToken) {
+      uniqueVisitorTokens.add(row.visitorToken);
+    }
 
     let device = "desktop";
     let browser = "Unknown";
@@ -71,12 +86,21 @@ function aggregate(
     const ref = hostnameOf(row.referer);
     referrers[ref] = (referrers[ref] ?? 0) + 1;
 
+    const country = row.country || "Unknown";
+    countries[country] = (countries[country] ?? 0) + 1;
+
     if (recent.length < 20) {
-      recent.push({ time: row.createdAt.toISOString(), browser, device, referrer: ref });
+      recent.push({
+        time: row.createdAt.toISOString(),
+        browser,
+        device,
+        referrer: ref,
+        country,
+      });
     }
   }
 
-  return { timeline, devices, browsers, oses, referrers, recent };
+  return { timeline, devices, browsers, oses, referrers, countries, recent };
 }
 
 // Owner-scoped analytics for a single link.
@@ -93,10 +117,18 @@ export async function getLinkAnalytics(shortCode: string, userId: string) {
     where: { urlId: url.id },
     orderBy: { createdAt: "desc" },
     take: 2000, // cap breakdowns; total is authoritative via clickCount
-    select: { createdAt: true, userAgent: true, referer: true },
+    select: { createdAt: true, userAgent: true, referer: true, visitorToken: true, country: true },
   });
 
-  return { total: url.clickCount, ...aggregate(rows) };
+  // Count unique visitors (by distinct visitorToken)
+  const uniqueVisitorTokens = new Set<string>();
+  for (const row of rows) {
+    if (row.visitorToken) {
+      uniqueVisitorTokens.add(row.visitorToken);
+    }
+  }
+
+  return { total: url.clickCount, uniqueVisitors: uniqueVisitorTokens.size, ...aggregate(rows) };
 }
 
 // Aggregated analytics across every link the user owns (default "All Links" view).
@@ -111,8 +143,17 @@ export async function getOverviewAnalytics(userId: string) {
     where: { url: { userId } },
     orderBy: { createdAt: "desc" },
     take: 5000,
-    select: { createdAt: true, userAgent: true, referer: true },
+    select: { createdAt: true, userAgent: true, referer: true, visitorToken: true, country: true },
   });
 
-  return { total, totalUrls: urls.length, ...aggregate(rows) };
+  // Count unique visitors across all URLs
+  const uniqueVisitorTokens = new Set<string>();
+  for (const row of rows) {
+    if (row.visitorToken) {
+      uniqueVisitorTokens.add(row.visitorToken);
+    }
+  }
+
+  return { total, uniqueVisitors: uniqueVisitorTokens.size, totalUrls: urls.length, ...aggregate(rows) };
 }
+

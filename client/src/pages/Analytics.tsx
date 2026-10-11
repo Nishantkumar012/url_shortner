@@ -49,13 +49,15 @@ type AnalyticsLink = {
 
 type AnalyticsPayload = {
   total: number;
+  uniqueVisitors: number;
   totalUrls?: number;
   timeline: Record<string, number>;
   devices: Record<string, number>;
   browsers: Record<string, number>;
   oses: Record<string, number>;
   referrers: Record<string, number>;
-  recent: { time: string; browser: string; device: string; referrer: string }[];
+  countries: Record<string, number>;
+  recent: { time: string; browser: string; device: string; referrer: string; country: string }[];
 };
 
 export default function Analytics() {
@@ -347,26 +349,24 @@ export default function Analytics() {
               </SummaryCard>
 
               <SummaryCard
-                title="Active Links"
-                value={activeCount.toLocaleString()}
-                icon={<LinkIcon size={20} />}
+                title="Unique Visitors"
+                value={(analytics?.uniqueVisitors ?? 0).toLocaleString()}
+                icon={<Globe size={20} />}
                 iconClass="bg-secondary/10 text-secondary"
               >
                 <span className="font-label-md text-on-surface-variant">
-                  / {visibleLinks.length} total
+                  visitors
                 </span>
               </SummaryCard>
 
               <SummaryCard
-                title="Most Clicked"
-                value={topLink ? topLink.shortCode : "—"}
-                icon={<Trophy size={20} />}
+                title="Active Links"
+                value={activeCount.toLocaleString()}
+                icon={<LinkIcon size={20} />}
                 iconClass="bg-tertiary/10 text-tertiary"
               >
                 <span className="font-label-md text-on-surface-variant">
-                  {topLink
-                    ? `${topLink.clickCount.toLocaleString()} clicks`
-                    : "No data"}
+                  / {visibleLinks.length} total
                 </span>
               </SummaryCard>
 
@@ -701,6 +701,24 @@ export default function Analytics() {
                   <ReferrerList referrers={analytics.referrers} />
                 ) : (
                   <EmptyState message="No referrer data yet" />
+                )}
+              </section>
+
+              {/* COUNTRIES */}
+              <section className="glass-card col-span-12 flex flex-col rounded-xl p-8 md:col-span-6 lg:col-span-3">
+                <h3 className="mb-6 font-headline-md text-headline-md">
+                  Top Countries
+                </h3>
+
+                {analyticsLoading ? (
+                  <ChartSkeleton />
+                ) : analytics && Object.keys(analytics.countries).length > 0 ? (
+                  <BreakdownList
+                    entries={topEntries(analytics.countries, 8)}
+                    total={analytics.total}
+                  />
+                ) : (
+                  <EmptyState message="No location data yet" />
                 )}
               </section>
 
@@ -1052,7 +1070,7 @@ function RecentClicks({
             </span>
 
             <span className="block truncate text-xs text-on-surface-variant">
-              {click.referrer}
+              {click.referrer} · {click.country}
             </span>
           </div>
 

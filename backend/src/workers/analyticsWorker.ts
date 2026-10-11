@@ -7,10 +7,10 @@ import type { AnalyticsJobData } from "../jobs/analyticsJobs";
 export const analyticsWorker = new Worker<AnalyticsJobData>(
   "analytics",
   async (job) => {
-    const { shortCode, ip, userAgent, referer, clickedAt } = job.data;
+    const { shortCode, ip, userAgent, referer, visitorToken, country, clickedAt } = job.data;
 
     logger.debug(
-      { jobId: job.id, shortCode, ip, userAgent, referer },
+      { jobId: job.id, shortCode, ip, userAgent, referer, country },
       "Analytics: processing click job"
     );
 
@@ -27,6 +27,8 @@ export const analyticsWorker = new Worker<AnalyticsJobData>(
           ip: ip ?? null,
           userAgent: userAgent ?? null,
           referer: referer ?? null,
+          visitorToken: visitorToken ?? null,
+          country: country ?? "Unknown",
           createdAt: new Date(clickedAt),
         },
       }),
@@ -52,3 +54,4 @@ analyticsWorker.on("failed", (job, err) =>
 analyticsWorker.on("error", (err) =>
   logger.error({ err }, "Analytics worker error")
 );
+

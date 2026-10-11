@@ -6,6 +6,8 @@ export type AnalyticsJobData = {
   ip?: string | undefined;
   userAgent?: string | undefined;
   referer?: string | undefined;
+  visitorToken?: string | undefined; // hashed visitor token
+  country?: string | undefined; // ISO country code or "Unknown"
   clickedAt: string; // ISO
 };
 
@@ -15,7 +17,13 @@ export type AnalyticsJobData = {
  */
 export function enqueueAnalytics(data: AnalyticsJobData): void {
   logger.debug(
-    { shortCode: data.shortCode, ip: data.ip, userAgent: data.userAgent, referer: data.referer },
+    {
+      shortCode: data.shortCode,
+      ip: data.ip,
+      userAgent: data.userAgent,
+      referer: data.referer,
+      country: data.country,
+    },
     "Analytics: enqueuing click job"
   );
 
@@ -30,3 +38,4 @@ export function enqueueAnalytics(data: AnalyticsJobData): void {
     )
     .catch((err) => logger.error({ err }, "Analytics: failed to enqueue job"));
 }
+

@@ -78,14 +78,23 @@ model Url {
 
 
 model Analytics {
-  id        String   @id @default(cuid())
-  urlId     String
-  url       Url      @relation(fields: [urlId], references: [id], onDelete: Cascade)
-  ip        String?
-  userAgent String?
-  referer   String?
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  urlId         String
+  url           Url      @relation(fields: [urlId], references: [id], onDelete: Cascade)
+  ip            String?
+  userAgent     String?
+  referer       String?
+
+  // Unique visitor tracking: hashed visitor token (from cookie)
+  visitorToken  String?
+
+  // Geolocation: country code or "Unknown"
+  country       String?  @default("Unknown")
+
+  createdAt     DateTime @default(now())
 
   @@index([urlId])
+  @@index([urlId, createdAt])
+  @@index([visitorToken, urlId, createdAt])
   @@map("analytics")
 }

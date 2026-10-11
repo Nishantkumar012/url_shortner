@@ -12,12 +12,13 @@ export async function redirectController(
     if (!shortCode) {
       throw new AppError(400, "shortCode is required");
     }
-      
+
     const originalUrl = await redirectUrl(
       shortCode,
       req.ip,
       req.headers["user-agent"],
-      req.headers.referer
+      req.headers.referer,
+      req.headers as Record<string, string | string[] | undefined>
     );
     // 302 (Found), NOT 301: a 301 is permanently cached by the browser, so
     // repeat clicks would bypass the backend entirely and no analytics /
