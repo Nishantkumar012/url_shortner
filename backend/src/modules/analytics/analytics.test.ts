@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { hashVisitorToken, isValidVisitorToken } from "../src/utils/visitorToken";
-import { getCountry, detectCountryFromHeaders } from "../src/utils/geoip";
+import { hashVisitorToken, isValidVisitorToken } from "../../utils/visitorToken";
+import { getCountry, detectCountryFromHeaders } from "../../utils/geoip";
 
 describe("Visitor Token Utilities", () => {
   describe("hashVisitorToken", () => {
