@@ -7,7 +7,8 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const token = localStorage.getItem("token");
-
+    
+  console.log("token mil gya  protected route", token);
   // If no token exists, redirect to login page
   if (!token) {
     return <Navigate to="/login" replace />;

@@ -13,7 +13,13 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
 
   logger.error({ err }, "Unhandled error");
-  const message =
-    env.NODE_ENV === "production" ? "Internal server error" : err.message;
+
+  // Always hide sensitive error details from client in production
+  // Even in development, sanitize Prisma/database errors
+  let message = "Internal server error";
+  if (env.NODE_ENV === "development" && err instanceof Error && !err.message.includes("prisma")) {
+    message = err.message;
+  }
+
   res.status(500).json({ status: "error", message });
 };

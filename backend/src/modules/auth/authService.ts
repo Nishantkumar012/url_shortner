@@ -22,13 +22,17 @@ async function createSession(userId: string) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_TTL_DAYS);
 
-  await prisma.refreshTokens.create({
-    data: {
-      userId,
-      tokenHash,
-      expiresAt,
-    },
-  });
+  try {
+    await prisma.refreshTokens.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  } catch {
+    throw new AppError(500, "Failed to create session");
+  }
 
   return {
     accessToken,
@@ -37,96 +41,121 @@ async function createSession(userId: string) {
 }
 
 export async function registerUser(input: RegisterInput) {
-  const existing = await prisma.user.findUnique({
-    where: {
-      email: input.email,
-    },
-  });
+  try {
+    const existing = await prisma.user.findUnique({
+      where: {
+        email: input.email,
+      },
+    });
 
-  if (existing) {
-    throw new AppError(409, "Email is already registered");
+    if (existing) {
+      throw new AppError(409, "Email is already registered");
+    }
+
+    const passwordHash = await hashPassword(input.password);
+
+    const user = await prisma.user.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        passwordHash
+
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+      },
+    });
+
+    const tokens = await createSession(user.id);
+
+    // Queue the verification email — fire-and-forget, never awaited so a slow
+    // Redis/worker must not block registration.
+    const emailToken = signEmailVerificationToken(user.id);
+    enqueueEmail({
+      type: "verify-email",
+      email: user.email,
+      name: user.name ?? "",
+      token: emailToken,
+    });
+
+    return {
+      user,
+      ...tokens,
+    };
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError(500, "Registration failed");
   }
+}
 
-  const passwordHash = await hashPassword(input.password);
+async function findUserWithRetry(email: string, maxRetries = 3) {
+  let lastError;
 
-  const user = await prisma.user.create({
-    data: {
-      name: input.name,
-      email: input.email,
-      passwordHash
-    
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isVerified: true,
-      createdAt: true,
-    },
-  });
-
-  const tokens = await createSession(user.id);
-
-  // Queue the verification email — fire-and-forget, never awaited so a slow
-  // Redis/worker must not block registration.
-  const emailToken = signEmailVerificationToken(user.id);
-  enqueueEmail({
-    type: "verify-email",
-    email: user.email,
-    name: user.name ?? "",
-    token: emailToken,
-  });
-
-  return {
-    user,
-    ...tokens,
-  };
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          passwordHash: true,
+          role: true,
+          isVerified: true,
+          createdAt: true,
+        },
+      });
+    } catch (err) {
+      lastError = err;
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+      }
+    }
+  }
+  throw lastError;
 }
 
 export async function loginUser(input: LoginInput) {
-  const user = await prisma.user.findUnique({
-    where: {
-      email: input.email,
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      passwordHash: true,
-      role: true,
-      isVerified: true,
-      createdAt: true,
-    },
-  });
-   
-//    console.log("hash password", user?.passwordHash);
-  if (!user) {
-    throw new AppError(401, "Invalid credentials");
+  try {
+    const user = await findUserWithRetry(input.email);
+
+    if (!user) {
+      throw new AppError(401, "Invalid credentials");
+    }
+
+    const isPasswordCorrect = await verifyPassword(
+      input.password,
+      user.passwordHash
+    );
+
+    if (!isPasswordCorrect) {
+      throw new AppError(401, "Invalid credentials");
+    }
+
+    const tokens = await createSession(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
+    };
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("Login error details:", errorMsg);
+    throw new AppError(500, "Login failed");
   }
-
-  const isPasswordCorrect = await verifyPassword(
-    input.password,
-    user.passwordHash
-  );
-
-  if (!isPasswordCorrect) {
-    throw new AppError(401, "Invalid credentials");
-  }
-
-  const tokens = await createSession(user.id);
-
-  return {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      createdAt: user.createdAt,
-    },
-    ...tokens,
-  };
 }
 
 
